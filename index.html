@@ -553,50 +553,23 @@ tbody tr:hover{background:rgba(59,130,246,.05)}
       </div>
     </div>
     <div class="card" style="margin-top:20px">
-      <div class="card-title"><div class="icon" style="background:rgba(139,92,246,.15)">☁️</div> Cloud Sync (Google Sheets)</div>
-      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">Sync your data across mobile & laptop using a free Google Sheet as your database.</p>
+      <div class="card-title"><div class="icon" style="background:rgba(245,158,11,.15)">🔥</div> Cloud Sync (Firebase)</div>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">Auto-sync across all your devices. Just paste your Firebase database URL.</p>
       <div class="form-group" style="margin-bottom:12px">
-        <label>Google Apps Script URL</label>
-        <input type="text" id="syncUrl" placeholder="Paste your deployed web app URL here..." style="padding:10px 14px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-family:inherit;font-size:13px;width:100%;outline:none" onchange="saveSyncUrl()">
-      </div>
-      <div style="display:flex;gap:10px;margin-bottom:16px">
-        <button class="sync-btn push" onclick="cloudPush()">⬆ Push All Data to Cloud</button>
-        <button class="sync-btn pull" onclick="cloudPull()">⬇ Pull Data from Cloud</button>
+        <label>Firebase Database URL</label>
+        <input type="text" id="syncUrl" placeholder="https://your-project-default-rtdb.firebaseio.com" style="padding:10px 14px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-family:inherit;font-size:13px;width:100%;outline:none" onchange="saveSyncUrl()">
       </div>
       <details>
-        <summary style="font-size:13px;font-weight:600;cursor:pointer;color:var(--accent-cyan);margin-bottom:10px">📋 One-Time Setup Guide (2 minutes)</summary>
+        <summary style="font-size:13px;font-weight:600;cursor:pointer;color:var(--accent-cyan);margin-bottom:10px">📋 One-Time Setup (1 minute)</summary>
         <div class="cloud-setup">
-          <ol style="font-size:12px;color:var(--text-secondary);line-height:2;padding-left:16px">
-            <li>Open <a href="https://sheets.google.com" target="_blank" style="color:var(--accent-cyan)">Google Sheets</a> → Create a new blank spreadsheet</li>
-            <li>Name it <strong>"Finance Tracker Data"</strong></li>
-            <li>Go to <strong>Extensions → Apps Script</strong></li>
-            <li>Delete any existing code and paste the script below</li>
-            <li>Click <strong>Deploy → New Deployment</strong></li>
-            <li>Type = <strong>Web app</strong>, Access = <strong>Anyone</strong></li>
-            <li>Click <strong>Deploy</strong>, authorize it, and copy the URL</li>
-            <li>Paste the URL in the field above</li>
+          <ol style="font-size:12px;color:var(--text-secondary);line-height:2.2;padding-left:16px">
+            <li>Go to <a href="https://console.firebase.google.com" target="_blank" style="color:var(--accent-cyan)">console.firebase.google.com</a></li>
+            <li>Click <strong>Create a project</strong> → Name it anything → Skip analytics → Create</li>
+            <li>In sidebar click <strong>Build → Realtime Database</strong></li>
+            <li>Click <strong>Create Database</strong> → Pick any location → <strong>Start in test mode</strong> → Enable</li>
+            <li>Copy the URL at the top (looks like <code>https://xxx-default-rtdb.firebaseio.com</code>)</li>
+            <li>Paste it above — done! ✅</li>
           </ol>
-          <div style="margin-top:12px">
-            <p style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:6px">📄 Apps Script Code (copy this):</p>
-            <pre style="background:rgba(0,0,0,.4);padding:14px;border-radius:8px;font-size:11px;color:#a5f3fc;overflow-x:auto;line-height:1.6;white-space:pre-wrap">function doGet(e) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName('SyncData');
-  if (!sheet) sheet = ss.insertSheet('SyncData');
-  const data = sheet.getRange('A1').getValue();
-  return ContentService.createTextOutput(data || '{}').setMimeType(ContentService.MimeType.JSON);
-}
-
-function doPost(e) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName('SyncData');
-  if (!sheet) sheet = ss.insertSheet('SyncData');
-  sheet.getRange('A1').setValue(e.postData.contents);
-  sheet.getRange('A2').setValue(new Date().toISOString());
-  return ContentService.createTextOutput(JSON.stringify({status:'ok'}))
-    .setMimeType(ContentService.MimeType.JSON);
-}</pre>
-            <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="navigator.clipboard.writeText(document.querySelector('.cloud-setup pre').textContent);showToast('📋 Script copied!')">📋 Copy Script</button>
-          </div>
         </div>
       </details>
     </div>
@@ -1691,16 +1664,16 @@ function renderMoMComparison(){
     </div>`;
 }
 
-// ==================== CLOUD SYNC ====================
-let syncUrl = localStorage.getItem('ft_sync_url') || '';
+// ==================== CLOUD SYNC (FIREBASE) ====================
+let syncUrl = localStorage.getItem('ft_sync_url') || 'https://finance-tracker-8e6c9-default-rtdb.firebaseio.com';
 let syncTimer = null;
 
 function saveSyncUrl(){
-  syncUrl = document.getElementById('syncUrl').value.trim();
+  syncUrl = document.getElementById('syncUrl').value.trim().replace(/\/$/,'');
   localStorage.setItem('ft_sync_url', syncUrl);
   updateSyncStatus();
-  if(syncUrl){showToast('☁️ Connected! Data will auto-sync.');autoSync()}
-  else showToast('⚫ Sync URL cleared');
+  if(syncUrl){showToast('🔥 Firebase connected! Auto-sync is on.');autoSync()}
+  else showToast('⚫ Sync disconnected');
 }
 
 function updateSyncStatus(syncing){
@@ -1734,7 +1707,7 @@ async function silentPush(){
   updateSyncStatus(true);
   try{
     const payload=JSON.stringify({config, expenses, pushed:new Date().toISOString()});
-    await fetch(syncUrl,{method:'POST',body:payload,headers:{'Content-Type':'text/plain'}});
+    await fetch(syncUrl+'/financeTracker.json',{method:'PUT',body:payload});
   }catch(err){console.warn('Auto-sync push failed:',err)}
   finally{updateSyncStatus(false)}
 }
@@ -1743,11 +1716,10 @@ async function silentPull(){
   if(!syncUrl)return;
   updateSyncStatus(true);
   try{
-    const resp=await fetch(syncUrl);
+    const resp=await fetch(syncUrl+'/financeTracker.json');
     if(!resp.ok)return;
-    const text=await resp.text();
-    const data=JSON.parse(text);
-    if(data.expenses && data.expenses.length>0){
+    const data=await resp.json();
+    if(data && data.expenses && data.expenses.length>0){
       expenses=data.expenses;
       if(data.config)config=data.config;
       const validCats=CATEGORIES.map(c=>c.name);
@@ -1762,36 +1734,35 @@ async function silentPull(){
 
 // Manual buttons (kept in Setup as fallback)
 async function cloudPush(){
-  if(!syncUrl){showToast('⚠️ Set your Google Apps Script URL first!');return}
+  if(!syncUrl){showToast('⚠️ Set your Firebase URL first!');return}
   const btns=document.querySelectorAll('.sync-btn.push');
   btns.forEach(b=>setLoading(b,true));
   try{
     const payload=JSON.stringify({config, expenses, pushed:new Date().toISOString()});
-    const resp=await fetch(syncUrl,{method:'POST',body:payload,headers:{'Content-Type':'text/plain'}});
-    if(resp.ok)showToast('✅ Data pushed to cloud!');
+    const resp=await fetch(syncUrl+'/financeTracker.json',{method:'PUT',body:payload});
+    if(resp.ok)showToast('✅ Data pushed to Firebase!');
     else showToast('❌ Push failed: '+resp.status);
   }catch(err){showToast('❌ Push error: '+err.message)}
   finally{btns.forEach(b=>setLoading(b,false))}
 }
 
 async function cloudPull(){
-  if(!syncUrl){showToast('⚠️ Set your Google Apps Script URL first!');return}
+  if(!syncUrl){showToast('⚠️ Set your Firebase URL first!');return}
   const btns=document.querySelectorAll('.sync-btn.pull');
   btns.forEach(b=>setLoading(b,true));
   try{
-    const resp=await fetch(syncUrl);
+    const resp=await fetch(syncUrl+'/financeTracker.json');
     if(!resp.ok){showToast('❌ Pull failed: '+resp.status);return}
-    const text=await resp.text();
-    const data=JSON.parse(text);
-    if(data.expenses){
+    const data=await resp.json();
+    if(data && data.expenses){
       const count=data.expenses.length;
       expenses=data.expenses;
       if(data.config)config=data.config;
       const validCats=CATEGORIES.map(c=>c.name);
       expenses.forEach(e=>{if(!validCats.includes(e.cat))e.cat=migrateCategory(e.desc,e.cat)});
       saveData();renderAll();
-      showToast(`✅ Pulled ${count} expenses from cloud!`);
-    } else {showToast('⚠️ No data found in cloud. Push first!')}
+      showToast(`✅ Pulled ${count} expenses from Firebase!`);
+    } else {showToast('⚠️ No data found in Firebase. Push first!')}
   }catch(err){showToast('❌ Pull error: '+err.message)}
   finally{btns.forEach(b=>setLoading(b,false))}
 }
