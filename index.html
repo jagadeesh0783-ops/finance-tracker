@@ -191,9 +191,12 @@ tbody tr:hover{background:rgba(59,130,246,.05)}
 @media(max-width:768px){
   .stats-grid{grid-template-columns:1fr 1fr}
   .setup-grid{grid-template-columns:1fr}
-  .form-grid{grid-template-columns:1fr 1fr}
-  .header{flex-direction:column;gap:12px;text-align:center}
-  .nav{flex-wrap:wrap}
+  .form-grid{grid-template-columns:1fr}
+  .header{flex-direction:column;gap:12px;text-align:center;padding:16px}
+  .header-left{flex-direction:column;gap:8px}
+  .header-left h1{font-size:18px}
+  .header div[style*="display:flex"]{flex-wrap:wrap;justify-content:center}
+  .nav{flex-wrap:nowrap;justify-content:flex-start;padding:10px}
   .yearly-months{grid-template-columns:1fr}
   .calendar-grid{gap:3px}
   .cal-day{min-height:34px;padding:4px 1px}
@@ -202,8 +205,8 @@ tbody tr:hover{background:rgba(59,130,246,.05)}
 }
 @media(max-width:480px){
   .stats-grid{grid-template-columns:1fr}
-  .form-grid{grid-template-columns:1fr}
   .app{padding:10px}
+  .nav-tab{padding:8px 14px;font-size:12px}
 }
 
 /* === ANIMATIONS === */
@@ -378,8 +381,8 @@ tbody tr:hover{background:rgba(59,130,246,.05)}
             <option>Dining Out &amp; Delivery</option><option>Transport &amp; Commute</option>
             <option>Utilities &amp; Recharges</option><option>EMIs &amp; Subscriptions</option>
             <option>Shopping &amp; Grooming</option><option>Health &amp; Pharmacy</option>
-            <option>Investments &amp; Savings</option><option>Trip Savings</option>
-            <option>PC &amp; Sim Savings</option><option>Miscellaneous</option>
+            <option>Investments &amp; Savings</option><option>Trip Savings</option><option>Travel &amp; Hotels</option>
+            <option>Sports &amp; Fitness</option><option>Entertainment</option><option>Gifts</option><option>PC &amp; Sim Savings</option><option>Miscellaneous</option>
           </select>
         </div>
         <div class="form-group"><label>Amount (₹)</label><input type="text" inputmode="decimal" id="expAmt" placeholder="e.g. 100+200" onblur="evalMath(this)"></div>
@@ -417,8 +420,8 @@ tbody tr:hover{background:rgba(59,130,246,.05)}
             <option>Dining Out &amp; Delivery</option><option>Transport &amp; Commute</option>
             <option>Utilities &amp; Recharges</option><option>EMIs &amp; Subscriptions</option>
             <option>Shopping &amp; Grooming</option><option>Health &amp; Pharmacy</option>
-            <option>Investments &amp; Savings</option><option>Trip Savings</option>
-            <option>PC &amp; Sim Savings</option><option>Miscellaneous</option>
+            <option>Investments &amp; Savings</option><option>Trip Savings</option><option>Travel &amp; Hotels</option>
+            <option>Sports &amp; Fitness</option><option>Entertainment</option><option>Gifts</option><option>PC &amp; Sim Savings</option><option>Miscellaneous</option>
           </select>
           <select id="filterMode" onchange="renderTracker()">
             <option value="all">All Modes</option>
@@ -593,7 +596,7 @@ tbody tr:hover{background:rgba(59,130,246,.05)}
       <div class="form-group"><label>Date</label><input type="date" id="editDate"></div>
       <div class="form-group"><label>Description</label><input type="text" id="editDesc"></div>
       <div class="form-group"><label>Category</label>
-        <select id="editCat"><option>Rent &amp; Maintenance</option><option>Food &amp; Groceries</option><option>Dining Out &amp; Delivery</option><option>Transport &amp; Commute</option><option>Utilities &amp; Recharges</option><option>EMIs &amp; Subscriptions</option><option>Shopping &amp; Grooming</option><option>Health &amp; Pharmacy</option><option>Investments &amp; Savings</option><option>Trip Savings</option><option>PC &amp; Sim Savings</option><option>Miscellaneous</option></select>
+        <select id="editCat"><option>Rent &amp; Maintenance</option><option>Food &amp; Groceries</option><option>Dining Out &amp; Delivery</option><option>Transport &amp; Commute</option><option>Utilities &amp; Recharges</option><option>EMIs &amp; Subscriptions</option><option>Shopping &amp; Grooming</option><option>Health &amp; Pharmacy</option><option>Sports &amp; Fitness</option><option>Entertainment</option><option>Gifts</option><option>Investments &amp; Savings</option><option>Trip Savings</option><option>Travel &amp; Hotels</option><option>PC &amp; Sim Savings</option><option>Miscellaneous</option></select>
       </div>
       <div class="form-group"><label>Amount</label><input type="text" inputmode="decimal" id="editAmt" onblur="evalMath(this)"></div>
       <div class="form-group"><label>Payment Mode</label>
@@ -625,8 +628,12 @@ const CATEGORIES = [
   {name:'EMIs & Subscriptions', type:'Want', color:'#ec4899'},
   {name:'Shopping & Grooming', type:'Want', color:'#f472b6'},
   {name:'Health & Pharmacy', type:'Need', color:'#ef4444'},
+  {name:'Sports & Fitness', type:'Want', color:'#14b8a6'},
+  {name:'Entertainment', type:'Want', color:'#f97316'},
+  {name:'Gifts', type:'Want', color:'#e879f9'},
   {name:'Investments & Savings', type:'Saving', color:'#10b981'},
   {name:'Trip Savings', type:'Saving', color:'#34d399'},
+  {name:'Travel & Hotels', type:'Saving', color:'#2dd4bf'},
   {name:'PC & Sim Savings', type:'Saving', color:'#22d3ee'},
   {name:'Miscellaneous', type:'Want', color:'#a78bfa'}
 ];
@@ -654,14 +661,17 @@ function migrateCategory(desc, oldCat){
   if(d.includes('myntra')||d.includes('amazon')||d.includes('flipkart')||d.includes('shopping')||d.includes('salon')||d.includes('clothes')||d.includes('shirt')||d.includes('jacket')||d.includes('earbuds')||d.includes('earphone')||d.includes('shoes')||d.includes('mouse')||d.includes('speaker'))return 'Shopping & Grooming';
   if(d.includes('medicine')||d.includes('pharmacy')||d.includes('vitamin')||d.includes('health')||d.includes('doctor'))return 'Health & Pharmacy';
   if(d.includes('sip')||d.includes('mutual fund')||d.includes('ppf')||d.includes('fd ')||d.includes('deposit')||d.includes('saving'))return 'Investments & Savings';
-  if(d.includes('trip')||d.includes('hotel')||d.includes('goa'))return 'Trip Savings';
-  if(d.includes('gym')||d.includes('udemy')||d.includes('course')||d.includes('book'))return 'Health & Pharmacy';
-  if(d.includes('movie')||d.includes('concert')||d.includes('ticket'))return 'Dining Out & Delivery';
+  if(d.includes('trip')||d.includes('hotel')||d.includes('goa')||d.includes('booking')||d.includes('oyo')||d.includes('airbnb')||d.includes('resort'))return 'Travel & Hotels';
+  if(d.includes('gym')||d.includes('yoga')||d.includes('sports')||d.includes('football')||d.includes('cricket')||d.includes('badminton')||d.includes('swim')||d.includes('fitness'))return 'Sports & Fitness';
+  if(d.includes('movie')||d.includes('concert')||d.includes('ticket')||d.includes('game')||d.includes('amusement')||d.includes('park'))return 'Entertainment';
+  if(d.includes('gift')||d.includes('birthday')||d.includes('present'))return 'Gifts';
+  if(d.includes('udemy')||d.includes('course')||d.includes('book'))return 'Health & Pharmacy';
   if(oldCat==='Life Infrastructure')return 'Rent & Maintenance';
   if(oldCat==='Future Me')return 'Investments & Savings';
   if(oldCat==='Performance & Growth')return 'Health & Pharmacy';
   if(oldCat==='Relationships & Generosity')return 'Dining Out & Delivery';
   if(oldCat==='Lifestyle Enjoyment')return 'Dining Out & Delivery';
+  if(oldCat==='Trip Savings')return 'Trip Savings';
   return 'Miscellaneous';
 }
 
@@ -951,10 +961,9 @@ function init(){
   let migrated=false;
   expenses.forEach(e=>{if(!validCats.includes(e.cat)){e.cat=migrateCategory(e.desc,e.cat);migrated=true}});
   if(migrated)saveData();
-  if(!localStorage.getItem('ft_initialized')){
-    loadSampleData();
-    localStorage.setItem('ft_initialized','true');
-  }
+  
+  // Sample data is NEVER auto-loaded. Use the button in Setup if needed.
+
   document.getElementById('setupSalary').value = config.salary;
   document.getElementById('setupYear').value = config.year;
   document.getElementById('setupWeeklyLimit').value = config.weeklyLimit;
