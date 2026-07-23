@@ -19,6 +19,8 @@
   --gradient-purple:linear-gradient(135deg,#8b5cf6,#ec4899);
   --gradient-green:linear-gradient(135deg,#10b981,#06b6d4);
   --gradient-orange:linear-gradient(135deg,#f59e0b,#ef4444);
+  --gradient-red:linear-gradient(135deg,#ef4444,#dc2626);
+  --gradient-cyan:linear-gradient(135deg,#06b6d4,#34d399);
   --shadow-lg:0 20px 40px rgba(0,0,0,.4);--shadow-md:0 8px 24px rgba(0,0,0,.3);
   --shadow-glow-blue:0 0 30px rgba(59,130,246,.15);
   --shadow-glow-purple:0 0 30px rgba(139,92,246,.15);
@@ -78,6 +80,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg-primary);color:var(--tex
 .stat-card.purple::before{background:var(--gradient-purple)}
 .stat-card.green::before{background:var(--gradient-green)}
 .stat-card.orange::before{background:var(--gradient-orange)}
+.stat-card.red::before{background:var(--gradient-red)}
+.stat-card.cyan::before{background:var(--gradient-cyan)}
 .stat-label{font-size:12px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .stat-value{font-size:26px;font-weight:800;letter-spacing:-.5px}
 .stat-sub{font-size:12px;color:var(--text-secondary);margin-top:4px}
@@ -1090,7 +1094,7 @@ function renderDashboard(){
 
   document.getElementById('dashStats').innerHTML=`
     <div class="stat-card blue animate-in"><div class="stat-label">Total Salary</div><div class="stat-value">${fmt(salary)}</div><div class="stat-sub">${MONTH_NAMES[currentMonth]} ${currentYear}</div></div>
-    <div class="stat-card green animate-in" style="animation-delay:.1s"><div class="stat-label">Expenses</div><div class="stat-value">${fmt(totalSpend)}</div><div class="stat-sub">${cm.filter(e=>getType(e.cat)!=='Saving').length} transactions</div></div>
+    <div class="stat-card red animate-in" style="animation-delay:.1s"><div class="stat-label">Expenses</div><div class="stat-value" style="color:var(--accent-red)">${fmt(totalSpend)}</div><div class="stat-sub">${cm.filter(e=>getType(e.cat)!=='Saving').length} transactions</div></div>
     <div class="stat-card cyan animate-in" style="animation-delay:.2s"><div class="stat-label">Savings / Investments</div><div class="stat-value" style="color:var(--accent-cyan)">${fmt(saveSpend)}</div><div class="stat-sub">${cm.filter(e=>getType(e.cat)==='Saving').length} transactions</div></div>
     <div class="stat-card purple animate-in" style="animation-delay:.3s"><div class="stat-label">Amount Left</div><div class="stat-value" style="color:${left>=0?'var(--accent-green)':'var(--accent-red)'}">${fmt(left)}</div><div class="stat-sub">${pctLeft}% remaining</div></div>
   `;
