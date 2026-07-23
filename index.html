@@ -176,7 +176,7 @@ tbody tr:hover{background:rgba(59,130,246,.05)}
 .legend-dot{width:10px;height:10px;border-radius:3px}
 
 /* === SETUP GRID === */
-.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.setup-container{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;padding-bottom:40px}
 .setup-table{width:100%;border-collapse:collapse}
 .setup-table td,.setup-table th{padding:10px 14px;border:1px solid var(--border);font-size:13px}
 .setup-table th{background:rgba(59,130,246,.08);font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px}
@@ -194,7 +194,7 @@ tbody tr:hover{background:rgba(59,130,246,.05)}
 /* === RESPONSIVE === */
 @media(max-width:768px){
   .stats-grid{grid-template-columns:1fr 1fr}
-  .setup-grid{grid-template-columns:1fr}
+  .setup-container{grid-template-columns:1fr}
   .form-grid{grid-template-columns:1fr}
   .header{flex-direction:column;gap:12px;text-align:center;padding:16px}
   .header-left{flex-direction:column;gap:8px}
@@ -294,6 +294,21 @@ tbody tr:hover{background:rgba(59,130,246,.05)}
 @keyframes spin{to{transform:rotate(360deg)}}
 .cloud-setup{padding:16px;background:rgba(139,92,246,.05);border:1px solid rgba(139,92,246,.15);border-radius:var(--radius);margin-top:12px}
 .cloud-setup code{background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px;font-size:12px;color:var(--accent-cyan)}
+
+/* === FLOATING QUICK ADD BUTTON === */
+.floating-add-btn{position:fixed;bottom:24px;right:24px;width:54px;height:54px;border-radius:50%;background:var(--gradient-blue);color:#fff;font-size:24px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 25px rgba(59,130,246,.4);z-index:998;cursor:pointer;border:none;transition:var(--transition)}
+.floating-add-btn:hover{transform:scale(1.1);box-shadow:0 15px 30px rgba(59,130,246,.6)}
+
+/* === REIMBURSABLE & FRIEND BADGES === */
+.badge-reimbursable{background:rgba(245,158,11,.15);color:#f59e0b;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600;display:inline-block;margin-left:4px}
+.due-badge{font-size:11px;padding:4px 10px;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;gap:4px}
+.due-badge.urgent{background:rgba(239,68,68,.15);color:#ef4444}
+.due-badge.normal{background:rgba(59,130,246,.15);color:#3b82f6}
+.due-badge.safe{background:rgba(16,185,129,.15);color:#10b981}
+
+/* === CARD DUES & FRIENDS CARDS === */
+.due-card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:12px}
+.card-due-item{background:rgba(15,23,42,.6);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative}
 </style>
 </head>
 <body>
@@ -332,6 +347,20 @@ tbody tr:hover{background:rgba(59,130,246,.05)}
   <section class="section active" id="sec-dashboard">
     <div id="forecastBanner"></div>
     <div class="stats-grid" id="dashStats"></div>
+    <div class="card" id="savingsGoalsCard">
+      <div class="card-title"><div class="icon" style="background:rgba(16,185,129,.15)">🎯</div> Savings Goals Progress</div>
+      <div id="savingsGoalsContainer"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div class="card">
+        <div class="card-title"><div class="icon" style="background:rgba(239,68,68,.15)">💳</div> Credit Card Dues (SBI & ICICI)</div>
+        <div id="cardDuesContainer"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><div class="icon" style="background:rgba(245,158,11,.15)">🤝</div> Friends & Settlements (Money Owed)</div>
+        <div id="friendsContainer"></div>
+      </div>
+    </div>
     <div class="card">
       <div class="card-title"><div class="icon" style="background:rgba(139,92,246,.15)">🧠</div> Smart Insights</div>
       <div class="insight-grid" id="insightsGrid"></div>
@@ -367,8 +396,10 @@ tbody tr:hover{background:rgba(59,130,246,.05)}
       </div>
     </div>
     <div class="card">
-      <div class="card-title"><div class="icon" style="background:rgba(6,182,212,.15)">🔄</div> Recurring Expenses Detected</div>
-      <div id="recurringList"></div>
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:8px"><div class="icon" style="background:rgba(6,182,212,.15)">🔄</div> Recurring EMIs & Subscriptions Manager</div>
+      </div>
+      <div id="recurringManagerContainer"></div>
     </div>
   </section>
 
@@ -392,7 +423,10 @@ tbody tr:hover{background:rgba(59,130,246,.05)}
         <div class="form-group"><label>Amount (₹)</label><input type="text" inputmode="decimal" id="expAmt" placeholder="e.g. 100+200" onblur="evalMath(this)"></div>
         <div class="form-group"><label>Payment Mode</label>
           <select id="expMode">
-            <option>UPI</option><option>Cash</option><option>Credit Card</option>
+            <option>Credit Card (SBI)</option>
+            <option>Credit Card (ICICI)</option>
+            <option>Credit Card (Other)</option>
+            <option>UPI</option><option>Cash</option>
             <option>Debit Card</option><option>Bank Transfer</option>
           </select>
         </div>
@@ -400,14 +434,25 @@ tbody tr:hover{background:rgba(59,130,246,.05)}
           <select id="expType"><option>Need</option><option>Want</option><option>Saving</option></select>
         </div>
         <div class="form-group"><label>Notes</label><input type="text" id="expNotes" placeholder="Optional note"></div>
-        <div class="form-group" style="justify-content:flex-end"><button class="btn btn-primary" onclick="addExpense()" id="addExpBtn">➕ Add Expense</button></div>
+        <div class="form-group" style="display:flex;align-items:center;gap:8px;grid-column:span 2">
+          <input type="checkbox" id="expReimbursable" style="width:18px;height:18px;accent-color:var(--accent-orange);cursor:pointer" onchange="document.getElementById('expFriendNameGroup').style.display=this.checked?'block':'none'">
+          <label for="expReimbursable" style="cursor:pointer;margin:0;font-weight:600;color:var(--accent-orange)">🤝 Paid for Friend (Reimbursable - Exclude from Personal Budget)</label>
+        </div>
+        <div class="form-group" id="expFriendNameGroup" style="display:none;grid-column:span 2">
+          <label>Friend's Name</label>
+          <input type="text" id="expFriendName" placeholder="e.g. Rahul, Priya">
+        </div>
+        <div class="form-group" style="justify-content:flex-end;grid-column:span 2"><button class="btn btn-primary" onclick="addExpense()" id="addExpBtn">➕ Add Expense</button></div>
       </div>
     </div>
 
     <div class="card">
       <div style="margin-bottom:14px"><div class="search-box"><input type="text" id="searchExp" placeholder="Search expenses... (e.g. Swiggy, rent, gym)" oninput="renderTracker()"></div></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-        <div class="card-title" style="margin-bottom:0"><div class="icon" style="background:rgba(6,182,212,.15)">📋</div> Expense Log</div>
+        <div class="card-title" style="margin-bottom:0;display:flex;align-items:center;gap:12px">
+          <div class="icon" style="background:rgba(6,182,212,.15)">📋</div> Expense Log
+          <button class="btn btn-ghost btn-sm" onclick="exportToCSV()">📄 Export CSV</button>
+        </div>
         <div class="filter-row" style="margin-bottom:0">
           <select id="filterMonth" onchange="renderTracker()">
             <option value="all">All Months</option>
@@ -429,7 +474,10 @@ tbody tr:hover{background:rgba(59,130,246,.05)}
           </select>
           <select id="filterMode" onchange="renderTracker()">
             <option value="all">All Modes</option>
-            <option>UPI</option><option>Cash</option><option>Credit Card</option>
+            <option>Credit Card (SBI)</option>
+            <option>Credit Card (ICICI)</option>
+            <option>Credit Card (Other)</option>
+            <option>UPI</option><option>Cash</option>
             <option>Debit Card</option><option>Bank Transfer</option>
           </select>
           <select id="filterType" onchange="renderTracker()">
@@ -524,67 +572,102 @@ tbody tr:hover{background:rgba(59,130,246,.05)}
 
   <!-- ============ SETUP ============ -->
   <section class="section" id="sec-setup">
-    <div class="setup-grid">
-      <div class="card">
-        <div class="card-title"><div class="icon" style="background:rgba(59,130,246,.15)">💼</div> Salary & Budget (50:30:20)</div>
-        <div class="form-grid" style="grid-template-columns:1fr 1fr">
-          <div class="form-group"><label>Monthly Salary</label><input type="number" id="setupSalary" value="50000" onchange="updateSetup()"></div>
-          <div class="form-group"><label>Year</label><input type="number" id="setupYear" value="2026" onchange="updateSetup()"></div>
-        </div>
-        <div style="margin-top:16px" id="budgetSplit"></div>
-      </div>
-      <div class="card">
-        <div class="card-title"><div class="icon" style="background:rgba(139,92,246,.15)">📂</div> Categories & Payment Modes</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-          <div>
-            <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Categories</h4>
-            <div id="catList"></div>
+    <div class="setup-container">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div class="card">
+          <div class="card-title"><div class="icon" style="background:rgba(59,130,246,.15)">💼</div> Salary & Budget (50:30:20)</div>
+          <div class="form-grid" style="grid-template-columns:1fr 1fr">
+            <div class="form-group"><label>Monthly Salary</label><input type="number" id="setupSalary" value="50000" onchange="updateSetup()"></div>
+            <div class="form-group"><label>Year</label><input type="number" id="setupYear" value="2026" onchange="updateSetup()"></div>
           </div>
-          <div>
-            <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Payment Modes</h4>
-            <div id="modeList"></div>
+          <div style="margin-top:16px" id="budgetSplit"></div>
+        </div>
+        
+        <div class="card">
+          <div class="card-title"><div class="icon" style="background:rgba(16,185,129,.15)">🎯</div> Savings Goals Target Setup</div>
+          <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr">
+            <div class="form-group"><label>Trip Savings Goal (₹)</label><input type="number" id="goalTrip" onchange="updateSavingsGoals()"></div>
+            <div class="form-group"><label>PC &amp; Sim Goal (₹)</label><input type="number" id="goalPC" onchange="updateSavingsGoals()"></div>
+            <div class="form-group"><label>Investments Goal (₹)</label><input type="number" id="goalInvest" onchange="updateSavingsGoals()"></div>
           </div>
         </div>
-      </div>
-    </div>
-    <div class="card" style="margin-top:20px">
-      <div class="card-title"><div class="icon" style="background:rgba(16,185,129,.15)">📅</div> Projected Budget (10% Annual Increase)</div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Year</th><th>Salary</th><th>Needs (50%)</th><th>Wants (30%)</th><th>Savings (20%)</th></tr></thead>
-          <tbody id="projectionBody"></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="card" style="margin-top:20px">
-      <div class="card-title"><div class="icon" style="background:rgba(245,158,11,.15)">🔥</div> Cloud Sync (Firebase)</div>
-      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">Auto-sync across all your devices. Just paste your Firebase database URL.</p>
-      <div class="form-group" style="margin-bottom:12px">
-        <label>Firebase Database URL</label>
-        <input type="text" id="syncUrl" placeholder="https://your-project-default-rtdb.firebaseio.com" style="padding:10px 14px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-family:inherit;font-size:13px;width:100%;outline:none" onchange="saveSyncUrl()">
-      </div>
-      <details>
-        <summary style="font-size:13px;font-weight:600;cursor:pointer;color:var(--accent-cyan);margin-bottom:10px">📋 One-Time Setup (1 minute)</summary>
-        <div class="cloud-setup">
-          <ol style="font-size:12px;color:var(--text-secondary);line-height:2.2;padding-left:16px">
-            <li>Go to <a href="https://console.firebase.google.com" target="_blank" style="color:var(--accent-cyan)">console.firebase.google.com</a></li>
-            <li>Click <strong>Create a project</strong> → Name it anything → Skip analytics → Create</li>
-            <li>In sidebar click <strong>Build → Realtime Database</strong></li>
-            <li>Click <strong>Create Database</strong> → Pick any location → <strong>Start in test mode</strong> → Enable</li>
-            <li>Copy the URL at the top (looks like <code>https://xxx-default-rtdb.firebaseio.com</code>)</li>
-            <li>Paste it above — done! ✅</li>
-          </ol>
+
+        <div class="card">
+          <div class="card-title"><div class="icon" style="background:rgba(16,185,129,.15)">📅</div> Projected Budget</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Year</th><th>Salary</th><th>Needs (50%)</th><th>Wants (30%)</th><th>Savings (20%)</th></tr></thead>
+              <tbody id="projectionBody"></tbody>
+            </table>
+          </div>
         </div>
-      </details>
-    </div>
-    <div class="card" style="margin-top:20px">
-      <div class="card-title"><div class="icon" style="background:rgba(239,68,68,.15)">🗑️</div> Data Management</div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button class="btn btn-danger" onclick="if(confirm('Clear ALL expenses? This cannot be undone.')){expenses=[];saveData();renderAll()}">🗑️ Clear All Expenses</button>
-        <button class="btn btn-ghost" onclick="loadSampleData()">📥 Load Sample Data</button>
-        <button class="btn btn-ghost" onclick="exportData()">⬇ Export JSON</button>
-        <label class="btn btn-ghost" style="cursor:pointer">⬆ Import JSON<input type="file" accept=".json" style="display:none" onchange="importData(event)"></label>
       </div>
+
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div class="card">
+          <div class="card-title"><div class="icon" style="background:rgba(139,92,246,.15)">📂</div> Categories & Payment Modes</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+            <div>
+              <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px">Categories</h4>
+              <div id="catList"></div>
+            </div>
+            <div>
+              <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px">Payment Modes</h4>
+              <div id="modeList"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="card" style="grid-column:1/-1">
+        <div class="card-title"><div class="icon" style="background:rgba(236,72,153,.15)">🔁</div> Manage Recurring Expenses</div>
+        <div id="setupRecurringList" style="margin-bottom:12px;max-height:300px;overflow-y:auto;padding-right:4px"></div>
+        <div style="border-top:1px solid var(--border);padding-top:16px">
+          <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr));align-items:end;gap:12px">
+            <div class="form-group"><label>Name</label><input type="text" id="recName" placeholder="e.g. Netflix"></div>
+            <div class="form-group"><label>Amount</label><input type="number" id="recAmt" placeholder="₹"></div>
+            <div class="form-group"><label>Category</label><select id="recCat"></select></div>
+            <div class="form-group"><label>Mode</label><select id="recMode"></select></div>
+            <div class="form-group"><label>Day (1-31)</label><input type="number" id="recDay" min="1" max="31"></div>
+            <button class="btn btn-primary" onclick="addRecurringRule()" style="height:38px;margin-bottom:4px">➕ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><div class="icon" style="background:rgba(245,158,11,.15)">🔥</div> Cloud Sync (Firebase)</div>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">Auto-sync across all your devices. Just paste your Firebase database URL.</p>
+        <div class="form-group" style="margin-bottom:12px">
+          <label>Firebase Database URL</label>
+          <input type="text" id="syncUrl" placeholder="https://your-project-default-rtdb.firebaseio.com" style="padding:10px 14px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-family:inherit;font-size:13px;width:100%;outline:none" onchange="saveSyncUrl()">
+        </div>
+        <details>
+          <summary style="font-size:13px;font-weight:600;cursor:pointer;color:var(--accent-cyan);margin-bottom:10px">📋 One-Time Setup (1 minute)</summary>
+          <div class="cloud-setup">
+            <ol style="font-size:12px;color:var(--text-secondary);line-height:2.2;padding-left:16px">
+              <li>Go to <a href="https://console.firebase.google.com" target="_blank" style="color:var(--accent-cyan)">console.firebase.google.com</a></li>
+              <li>Click <strong>Create a project</strong> → Name it anything → Skip analytics → Create</li>
+              <li>In sidebar click <strong>Build → Realtime Database</strong></li>
+              <li>Click <strong>Create Database</strong> → Pick any location → <strong>Start in test mode</strong> → Enable</li>
+              <li>Copy the URL at the top (looks like <code>https://xxx-default-rtdb.firebaseio.com</code>)</li>
+              <li>Paste it above — done! ✅</li>
+            </ol>
+          </div>
+        </details>
+      </div>
+      
+      <div class="card">
+        <div class="card-title"><div class="icon" style="background:rgba(239,68,68,.15)">🗑️</div> Data Management</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn btn-danger" onclick="if(confirm('Clear ALL expenses? This cannot be undone.')){expenses=[];saveData();renderAll()}">🗑️ Clear All</button>
+          <button class="btn btn-ghost" onclick="loadSampleData()">📥 Load Sample</button>
+          <button class="btn btn-ghost" onclick="exportData()">⬇ Export JSON</button>
+          <button class="btn btn-ghost" onclick="exportToCSV()">📄 Export CSV</button>
+          <label class="btn btn-ghost" style="cursor:pointer">⬆ Import JSON<input type="file" accept=".json" style="display:none" onchange="importData(event)"></label>
+        </div>
+      </div>
+
     </div>
   </section>
 </div>
@@ -601,12 +684,26 @@ tbody tr:hover{background:rgba(59,130,246,.05)}
       </div>
       <div class="form-group"><label>Amount</label><input type="text" inputmode="decimal" id="editAmt" onblur="evalMath(this)"></div>
       <div class="form-group"><label>Payment Mode</label>
-        <select id="editMode"><option>UPI</option><option>Cash</option><option>Credit Card</option><option>Debit Card</option><option>Bank Transfer</option></select>
+        <select id="editMode">
+          <option>Credit Card (SBI)</option>
+          <option>Credit Card (ICICI)</option>
+          <option>Credit Card (Other)</option>
+          <option>UPI</option><option>Cash</option>
+          <option>Debit Card</option><option>Bank Transfer</option>
+        </select>
       </div>
       <div class="form-group"><label>Type</label>
         <select id="editType"><option>Need</option><option>Want</option><option>Saving</option></select>
       </div>
       <div class="form-group" style="grid-column:span 2"><label>Notes</label><input type="text" id="editNotes"></div>
+      <div class="form-group" style="display:flex;align-items:center;gap:8px;grid-column:span 2">
+        <input type="checkbox" id="editReimbursable" style="width:18px;height:18px;accent-color:var(--accent-orange);cursor:pointer" onchange="document.getElementById('editFriendNameGroup').style.display=this.checked?'block':'none'">
+        <label for="editReimbursable" style="cursor:pointer;margin:0;font-weight:600;color:var(--accent-orange)">🤝 Paid for Friend (Reimbursable)</label>
+      </div>
+      <div class="form-group" id="editFriendNameGroup" style="display:none;grid-column:span 2">
+        <label>Friend's Name</label>
+        <input type="text" id="editFriendName" placeholder="e.g. Rahul, Priya">
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -638,13 +735,30 @@ const CATEGORIES = [
   {name:'PC & Sim Savings', type:'Saving', color:'#22d3ee'},
   {name:'Miscellaneous', type:'Want', color:'#a78bfa'}
 ];
-const PAYMENT_MODES = ['Credit Card','Debit Card','UPI','Cash','Bank Transfer'];
-const PAYMENT_COLORS = {'Credit Card':'#ef4444','Debit Card':'#06b6d4','UPI':'#8b5cf6','Cash':'#f59e0b','Bank Transfer':'#10b981'};
+const PAYMENT_MODES = ['Credit Card (SBI)','Credit Card (ICICI)','Credit Card (Other)','Debit Card','UPI','Cash','Bank Transfer'];
+const PAYMENT_COLORS = {
+  'Credit Card (SBI)':'#ef4444',
+  'Credit Card (ICICI)':'#f97316',
+  'Credit Card (Other)':'#ec4899',
+  'Credit Card':'#ef4444',
+  'Debit Card':'#06b6d4',
+  'UPI':'#8b5cf6',
+  'Cash':'#f59e0b',
+  'Bank Transfer':'#10b981'
+};
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 let config = JSON.parse(localStorage.getItem('ft_config') || '{}');
 if(!config.salary) config = {salary:50000, year:2026};
+if(!config.goals) config.goals = {trip: 30000, pc: 70000, invest: 100000};
+if(!config.recurringRules) config.recurringRules = [
+  { id: 1, name: 'House Rent', amt: 12000, day: 1, cat: 'Rent & Maintenance', mode: 'Bank Transfer' },
+  { id: 2, name: 'Home EMI', amt: 15000, day: 10, cat: 'EMIs & Subscriptions', mode: 'Bank Transfer' },
+  { id: 3, name: 'Netflix', amt: 199, day: 5, cat: 'EMIs & Subscriptions', mode: 'Credit Card (SBI)' },
+  { id: 4, name: 'Spotify', amt: 119, day: 5, cat: 'EMIs & Subscriptions', mode: 'Credit Card (ICICI)' },
+  { id: 5, name: 'Monthly SIP', amt: 5000, day: 5, cat: 'Investments & Savings', mode: 'Bank Transfer' }
+];
 let expenses = JSON.parse(localStorage.getItem('ft_expenses') || '[]');
 let editingIdx = -1;
 let currentMonth = new Date().getMonth();
@@ -962,13 +1076,30 @@ function init(){
   let migrated=false;
   expenses.forEach(e=>{if(!validCats.includes(e.cat)){e.cat=migrateCategory(e.desc,e.cat);migrated=true}});
   if(migrated)saveData();
-  
-  // Sample data is NEVER auto-loaded. Use the button in Setup if needed.
+
+  const now = new Date();
+  currentMonth = now.getMonth();
+  currentYear = now.getFullYear();
+
+  if(expenses.length > 0){
+    const cmExps = expenses.filter(e => {
+      const d = parseAppDate(e.date);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
+    if(cmExps.length === 0){
+      const latest = expenses[expenses.length - 1];
+      if(latest && latest.date){
+        const ld = parseAppDate(latest.date);
+        currentMonth = ld.getMonth();
+        currentYear = ld.getFullYear();
+      }
+    }
+  }
 
   document.getElementById('setupSalary').value = config.salary;
   document.getElementById('setupYear').value = config.year;
   const today = new Date();
-  document.getElementById('expDate').value = today.toISOString().split('T')[0];
+  document.getElementById('expDate').value = formatYMD(today);
   updateDateTime();
   setInterval(updateDateTime, 60000);
   renderAll();
@@ -986,6 +1117,7 @@ document.querySelectorAll('.nav-tab').forEach(tab=>{
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById('sec-'+tab.dataset.tab).classList.add('active');
+    setTimeout(renderAll,50);
   });
 });
 
@@ -1005,11 +1137,33 @@ function renderAll(){
   renderMoMComparison();
   renderCalendar();
   renderSetup();
+  renderSavingsGoals();
+  renderCreditCardDues();
+  renderFriendsSettlements();
+  renderRecurringManager();
 }
 
 // ==================== UTILITIES ====================
+function parseAppDate(d){
+  if(!d) return new Date();
+  if(typeof d !== 'string') return new Date(d);
+  const dateOnly = d.split('T')[0];
+  const parts = dateOnly.split('-');
+  if(parts.length === 3){
+    return new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  }
+  return new Date(d);
+}
+function formatYMD(d){
+  if(!d) return '';
+  const dt = (d instanceof Date) ? d : parseAppDate(d);
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth()+1).padStart(2,'0');
+  const day = String(dt.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
 function fmt(n){return '₹'+Number(n).toLocaleString('en-IN')}
-function fmtDate(d){const dt=new Date(d);return dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}
+function fmtDate(d){if(!d)return'';const dt=parseAppDate(d);return dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}
 function getType(cat){const c=CATEGORIES.find(x=>x.name===cat);return c?c.type:'Need'}
 function getCatColor(cat){const c=CATEGORIES.find(x=>x.name===cat);return c?c.color:'#64748b'}
 
@@ -1033,13 +1187,19 @@ function addExpense(){
   const mode=document.getElementById('expMode').value;
   const type=document.getElementById('expType').value;
   const notes=document.getElementById('expNotes').value.trim();
+  const isReimbursable=document.getElementById('expReimbursable').checked;
+  const friendName=isReimbursable?(document.getElementById('expFriendName').value.trim()||'Friend'):'';
+
   if(!date||!desc||!amt){showToast('❌ Please fill Date, Description & Amount');return}
-  expenses.push({date,desc,cat,amt,mode,type,notes});
+  expenses.push({date,desc,cat,amt,mode,type,notes,isReimbursable,friendName,isSettled:false});
   expenses.sort((a,b)=>a.date.localeCompare(b.date));
   saveData(); renderAll();
   document.getElementById('expDesc').value='';
   document.getElementById('expAmt').value='';
   document.getElementById('expNotes').value='';
+  document.getElementById('expReimbursable').checked=false;
+  document.getElementById('expFriendName').value='';
+  document.getElementById('expFriendNameGroup').style.display='none';
   showToast('✅ Expense added!');
 }
 
@@ -1054,11 +1214,27 @@ function openEdit(i){
   document.getElementById('editMode').value=e.mode;
   document.getElementById('editType').value=e.type;
   document.getElementById('editNotes').value=e.notes||'';
+  document.getElementById('editReimbursable').checked=!!e.isReimbursable;
+  document.getElementById('editFriendName').value=e.friendName||'';
+  document.getElementById('editFriendNameGroup').style.display=e.isReimbursable?'block':'none';
   document.getElementById('editModal').classList.add('show');
 }
 function closeModal(){document.getElementById('editModal').classList.remove('show')}
 function saveEdit(){
-  expenses[editingIdx]={date:document.getElementById('editDate').value,desc:document.getElementById('editDesc').value,cat:document.getElementById('editCat').value,amt:parseFloat(document.getElementById('editAmt').value),mode:document.getElementById('editMode').value,type:document.getElementById('editType').value,notes:document.getElementById('editNotes').value};
+  const isReimbursable=document.getElementById('editReimbursable').checked;
+  const friendName=isReimbursable?(document.getElementById('editFriendName').value.trim()||'Friend'):'';
+  expenses[editingIdx]={
+    ...expenses[editingIdx],
+    date:document.getElementById('editDate').value,
+    desc:document.getElementById('editDesc').value,
+    cat:document.getElementById('editCat').value,
+    amt:parseFloat(document.getElementById('editAmt').value),
+    mode:document.getElementById('editMode').value,
+    type:document.getElementById('editType').value,
+    notes:document.getElementById('editNotes').value,
+    isReimbursable,
+    friendName
+  };
   expenses.sort((a,b)=>a.date.localeCompare(b.date));
   saveData();renderAll();closeModal();showToast('✅ Updated!');
 }
@@ -1067,7 +1243,25 @@ function saveEdit(){
 function exportData(){
   const blob=new Blob([JSON.stringify({config,expenses},null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='finance_tracker_backup.json';a.click();
-  showToast('⬇ Exported!');
+  showToast('⬇ Exported JSON!');
+}
+function exportToCSV(){
+  if(expenses.length===0){showToast('⚠️ No expenses to export');return}
+  const headers=['Date','Description','Category','Amount','Payment Mode','Type','Reimbursable','Friend Name','Notes'];
+  const rows=expenses.map(e=>[
+    `"${e.date}"`,
+    `"${(e.desc||'').replace(/"/g,'""')}"`,
+    `"${(e.cat||'').replace(/"/g,'""')}"`,
+    e.amt,
+    `"${(e.mode||'').replace(/"/g,'""')}"`,
+    `"${(e.type||'').replace(/"/g,'""')}"`,
+    e.isReimbursable?'Yes':'No',
+    `"${(e.friendName||'').replace(/"/g,'""')}"`,
+    `"${(e.notes||'').replace(/"/g,'""')}"`
+  ]);
+  const blob=new Blob([[headers.join(','),...rows.map(r=>r.join(','))].join('\n')],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`finance_tracker_${formatYMD(new Date())}.csv`;a.click();
+  showToast('📄 Exported CSV!');
 }
 function importData(e){
   const f=e.target.files[0];if(!f)return;
@@ -1084,11 +1278,12 @@ function renderDashboard(){
   const needs=salary*0.5, wants=salary*0.3, savings=salary*0.2;
   // Current month filter
   const now = new Date();
-  const cm = expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===currentMonth&&d.getFullYear()===currentYear});
-  const totalSpend=cm.filter(e=>getType(e.cat)!=='Saving').reduce((s,e)=>s+e.amt,0);
-  const needSpend=cm.filter(e=>getType(e.cat)==='Need').reduce((s,e)=>s+e.amt,0);
-  const wantSpend=cm.filter(e=>getType(e.cat)==='Want').reduce((s,e)=>s+e.amt,0);
-  const saveSpend=cm.filter(e=>getType(e.cat)==='Saving').reduce((s,e)=>s+e.amt,0);
+  const cm = expenses.filter(e=>{const d=parseAppDate(e.date);return d.getMonth()===currentMonth&&d.getFullYear()===currentYear});
+  const personalCm = cm.filter(e => !e.isReimbursable);
+  const totalSpend=personalCm.filter(e=>getType(e.cat)!=='Saving').reduce((s,e)=>s+e.amt,0);
+  const needSpend=personalCm.filter(e=>getType(e.cat)==='Need').reduce((s,e)=>s+e.amt,0);
+  const wantSpend=personalCm.filter(e=>getType(e.cat)==='Want').reduce((s,e)=>s+e.amt,0);
+  const saveSpend=personalCm.filter(e=>getType(e.cat)==='Saving').reduce((s,e)=>s+e.amt,0);
   const left=salary-totalSpend-saveSpend;
   const pctLeft=salary?((left/salary)*100).toFixed(1):0;
 
@@ -1172,11 +1367,13 @@ function drawDonut(canvasId, data, legendId){
 // ==================== TREND CHART ====================
 function drawTrendChart(monthData){
   const canvas=document.getElementById('trendCanvas');
+  if(!canvas)return;
   const ctx=canvas.getContext('2d');
   const rect=canvas.parentElement.getBoundingClientRect();
-  canvas.width=rect.width*2;canvas.height=280*2;
+  const W=rect.width||600,H=280,pad={t:20,r:20,b:40,l:60};
+  canvas.width=W*2;canvas.height=H*2;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
   ctx.scale(2,2);
-  const W=rect.width,H=280,pad={t:20,r:20,b:40,l:60};
   ctx.clearRect(0,0,W,H);
 
   // Aggregate by date
@@ -1185,7 +1382,7 @@ function drawTrendChart(monthData){
   const dates=Object.keys(daily).sort();
   const vals=dates.map(d=>daily[d]);
   if(dates.length===0)return;
-  const maxV=Math.max(...vals,1);
+  const maxV=Math.max(...vals,100)*1.1;
   const chartW=W-pad.l-pad.r,chartH=H-pad.t-pad.b;
 
   // Grid lines
@@ -1198,17 +1395,19 @@ function drawTrendChart(monthData){
   }
 
   // Line + gradient fill
-  const grad=ctx.createLinearGradient(0,pad.t,0,H-pad.b);
-  grad.addColorStop(0,'rgba(59,130,246,.3)');grad.addColorStop(1,'rgba(59,130,246,0)');
-  ctx.beginPath();
-  dates.forEach((d,i)=>{
-    const x=pad.l+(i/(dates.length-1||1))*chartW;
-    const y=pad.t+chartH*(1-vals[i]/maxV);
-    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
-  });
-  const lastX=pad.l+((dates.length-1)/(dates.length-1||1))*chartW;
-  ctx.lineTo(lastX,pad.t+chartH);ctx.lineTo(pad.l,pad.t+chartH);ctx.closePath();
-  ctx.fillStyle=grad;ctx.fill();
+  try {
+    const grad=ctx.createLinearGradient(0,pad.t,0,H-pad.b);
+    grad.addColorStop(0,'rgba(59,130,246,.3)');grad.addColorStop(1,'rgba(59,130,246,0)');
+    ctx.beginPath();
+    dates.forEach((d,i)=>{
+      const x=pad.l+(i/(dates.length-1||1))*chartW;
+      const y=pad.t+chartH*(1-vals[i]/maxV);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    const lastX=pad.l+((dates.length-1)/(dates.length-1||1))*chartW;
+    ctx.lineTo(lastX,pad.t+chartH);ctx.lineTo(pad.l,pad.t+chartH);ctx.closePath();
+    ctx.fillStyle=grad;ctx.fill();
+  } catch(e){}
 
   // Line
   ctx.beginPath();
@@ -1233,7 +1432,7 @@ function drawTrendChart(monthData){
   dates.forEach((d,i)=>{
     if(i%step===0){
       const x=pad.l+(i/(dates.length-1||1))*chartW;
-      ctx.fillText(new Date(d).getDate()+'',x,H-pad.b+16);
+      ctx.fillText(parseAppDate(d).getDate()+'',x,H-pad.b+16);
     }
   });
 }
@@ -1246,25 +1445,34 @@ function renderTracker(){
   const ft=document.getElementById('filterType').value;
   const search=(document.getElementById('searchExp').value||'').toLowerCase();
   let filtered=expenses.filter(e=>{
-    if(fm!=='all'&&new Date(e.date).getMonth()!==parseInt(fm))return false;
-    if(fc!=='all'&&e.cat!==fc)return false;
-    if(fmode!=='all'&&e.mode!==fmode)return false;
-    if(ft!=='all'&&e.type!==ft)return false;
-    if(search&&!e.desc.toLowerCase().includes(search)&&!e.cat.toLowerCase().includes(search)&&!(e.notes||'').toLowerCase().includes(search)&&!String(e.amt).includes(search))return false;
+    if(!e) return false;
+    const mode = e.mode || 'UPI';
+    const cat = e.cat || 'Miscellaneous';
+    const type = e.type || getType(cat);
+    const desc = e.desc || '';
+    const notes = e.notes || '';
+    const friendName = e.friendName || '';
+
+    if(fm!=='all'&&parseAppDate(e.date).getMonth()!==parseInt(fm))return false;
+    if(fc!=='all'&&cat!==fc)return false;
+    if(fmode!=='all'&&mode!==fmode)return false;
+    if(ft!=='all'&&type!==ft)return false;
+    if(search&&!desc.toLowerCase().includes(search)&&!cat.toLowerCase().includes(search)&&!notes.toLowerCase().includes(search)&&!String(e.amt||0).includes(search)&&!friendName.toLowerCase().includes(search))return false;
     return true;
   });
-  const total=filtered.reduce((s,e)=>s+e.amt,0);
+  const total=filtered.reduce((s,e)=>s+(e.amt||0),0);
   document.getElementById('trackerBody').innerHTML=filtered.map((e,fi)=>{
     const realIdx=expenses.indexOf(e);
-    const typeCls=e.type==='Need'?'badge-need':e.type==='Want'?'badge-want':'badge-saving';
-    const modeCls=e.mode==='UPI'?'badge-upi':e.mode==='Cash'?'badge-cash':e.mode==='Credit Card'?'badge-credit':e.mode==='Debit Card'?'badge-debit':'badge-bank';
+    const modeStr=e.mode||'UPI';
+    const typeCls=(e.type||getType(e.cat))==='Need'?'badge-need':(e.type||getType(e.cat))==='Want'?'badge-want':'badge-saving';
+    const modeCls=modeStr.includes('Credit Card')?'badge-credit':modeStr==='UPI'?'badge-upi':modeStr==='Cash'?'badge-cash':modeStr==='Debit Card'?'badge-debit':'badge-bank';
     return `<tr>
       <td style="white-space:nowrap">${fmtDate(e.date)}</td>
-      <td style="font-weight:500">${e.desc}</td>
-      <td><span style="color:${getCatColor(e.cat)};font-size:12px;font-weight:500">${e.cat}</span></td>
-      <td style="font-weight:700">${fmt(e.amt)}</td>
-      <td><span class="badge ${modeCls}">${e.mode}</span></td>
-      <td><span class="badge ${typeCls}">${e.type}</span></td>
+      <td style="font-weight:500">${e.desc||'—'}${e.isReimbursable?`<span class="badge-reimbursable">🤝 ${e.friendName||'Friend'}</span>`:''}</td>
+      <td><span style="color:${getCatColor(e.cat)};font-size:12px;font-weight:500">${e.cat||'General'}</span></td>
+      <td style="font-weight:700">${fmt(e.amt||0)}</td>
+      <td><span class="badge ${modeCls}">${modeStr}</span></td>
+      <td><span class="badge ${typeCls}">${e.type||getType(e.cat)}</span></td>
       <td style="color:var(--text-muted);font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.notes||'—'}</td>
       <td><div class="action-cell"><button class="edit-btn" onclick="openEdit(${realIdx})" title="Edit">✏</button><button class="delete-btn" onclick="deleteExpense(${realIdx})" title="Delete">✕</button></div></td>
     </tr>`;
@@ -1279,17 +1487,17 @@ function renderWeekly(){
   // Build weeks from expense data
   const weekMap={};
   expenses.filter(e=>getType(e.cat)!=='Saving').forEach(e=>{
-    const d=new Date(e.date);
+    const d=parseAppDate(e.date);
     const day=d.getDay();
     const mon=new Date(d);mon.setDate(d.getDate()-((day+6)%7)); // Monday
-    const key=mon.toISOString().split('T')[0];
+    const key=formatYMD(mon);
     if(!weekMap[key])weekMap[key]={start:key,spend:0};
     weekMap[key].spend+=e.amt;
   });
   let weeks=Object.values(weekMap).sort((a,b)=>a.start.localeCompare(b.start));
   weeks.forEach(w=>{
-    const s=new Date(w.start);const e=new Date(s);e.setDate(s.getDate()+6);
-    w.end=e.toISOString().split('T')[0];
+    const s=parseAppDate(w.start);const e=new Date(s);e.setDate(s.getDate()+6);
+    w.end=formatYMD(e);
     const avgSpend=weeks.reduce((s,w)=>s+w.spend,0)/weeks.length||1;
     w.ratio=Math.round((w.spend/avgSpend)*100);
     const m=s.getMonth();
@@ -1319,14 +1527,17 @@ function renderWeekly(){
 
 function drawWeeklyChart(weeks){
   const canvas=document.getElementById('weeklyChart');
+  if(!canvas)return;
   const ctx=canvas.getContext('2d');
   const rect=canvas.parentElement.getBoundingClientRect();
-  canvas.width=rect.width*2;canvas.height=280*2;ctx.scale(2,2);
-  const W=rect.width,H=280,pad={t:20,r:20,b:50,l:60};
+  const W=rect.width||600,H=280,pad={t:20,r:20,b:50,l:60};
+  canvas.width=W*2;canvas.height=H*2;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.scale(2,2);
   ctx.clearRect(0,0,W,H);
-  if(weeks.length===0)return;
+  if(!weeks||weeks.length===0)return;
   const avgSpend=weeks.reduce((s,w)=>s+w.spend,0)/weeks.length||0;
-  const maxV=Math.max(...weeks.map(w=>w.spend),avgSpend)*1.1;
+  const maxV=Math.max(...weeks.map(w=>w.spend),avgSpend,100)*1.1;
   const chartW=W-pad.l-pad.r,chartH=H-pad.t-pad.b;
   const barW=Math.min((chartW/weeks.length)*0.6,40);
   const gap=(chartW-barW*weeks.length)/(weeks.length+1);
@@ -1353,13 +1564,17 @@ function drawWeeklyChart(weeks){
   // Bars
   weeks.forEach((w,i)=>{
     const x=pad.l+gap+(barW+gap)*i;
-    const h=(w.spend/maxV)*chartH;
+    const h=Math.max((w.spend/maxV)*chartH,2);
     const y=pad.t+chartH-h;
     const ok=w.spend<=avgSpend;
-    const grad=ctx.createLinearGradient(x,y,x,pad.t+chartH);
-    grad.addColorStop(0,ok?'rgba(16,185,129,.8)':'rgba(239,68,68,.8)');
-    grad.addColorStop(1,ok?'rgba(16,185,129,.2)':'rgba(239,68,68,.2)');
-    ctx.fillStyle=grad;
+    try {
+      const grad=ctx.createLinearGradient(x,y,x,pad.t+chartH);
+      grad.addColorStop(0,ok?'rgba(16,185,129,.8)':'rgba(239,68,68,.8)');
+      grad.addColorStop(1,ok?'rgba(16,185,129,.2)':'rgba(239,68,68,.2)');
+      ctx.fillStyle=grad;
+    } catch(e) {
+      ctx.fillStyle=ok?'rgba(16,185,129,.8)':'rgba(239,68,68,.8)';
+    }
     roundRect(ctx,x,y,barW,h,4);ctx.fill();
 
     // Label
@@ -1370,6 +1585,7 @@ function drawWeeklyChart(weeks){
 }
 
 function roundRect(ctx,x,y,w,h,r){
+  if(!h||h<=0||isNaN(h)||isNaN(y))return;
   ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
   ctx.lineTo(x+w,y+h);ctx.lineTo(x,y+h);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
 }
@@ -1377,7 +1593,7 @@ function roundRect(ctx,x,y,w,h,r){
 // ==================== MONTHLY ANALYSIS ====================
 function renderMonthly(){
   document.getElementById('monthLabel').textContent=MONTH_NAMES[currentMonth]+' '+currentYear;
-  const cm=expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===currentMonth&&d.getFullYear()===currentYear});
+  const cm=expenses.filter(e=>{const d=parseAppDate(e.date);return d.getMonth()===currentMonth&&d.getFullYear()===currentYear});
   const totalSpend=cm.filter(e=>getType(e.cat)!=='Saving').reduce((s,e)=>s+e.amt,0);
   const needSpend=cm.filter(e=>getType(e.cat)==='Need').reduce((s,e)=>s+e.amt,0);
   const wantSpend=cm.filter(e=>getType(e.cat)==='Want').reduce((s,e)=>s+e.amt,0);
@@ -1400,9 +1616,8 @@ function renderMonthly(){
   if(totalSpend>salary)score-=3;
   else if(totalSpend>salary*0.9)score-=1;
   if(needSpend>salary*0.5)score-=1;
-  if(wantSpend>salary*0.3)score-=1;
+  if(wantSpend>salary*0.3)score-=2;
   if(saveSpend<salary*0.2)score-=2;
-  if(saveSpend<salary*0.1)score-=1;
   score=Math.max(0,Math.min(10,score));
   document.getElementById('scoreValue').textContent=score;
   drawScoreCircle(score);
@@ -1424,6 +1639,7 @@ function renderMonthly(){
 
 function drawScoreCircle(score){
   const canvas=document.getElementById('scoreCanvas');
+  if(!canvas)return;
   const ctx=canvas.getContext('2d');
   ctx.clearRect(0,0,140,140);
   const cx=70,cy=70,r=58,lw=10;
@@ -1438,15 +1654,18 @@ function drawScoreCircle(score){
 
 function drawMonthlyChart(cm){
   const canvas=document.getElementById('monthlyChart');
+  if(!canvas)return;
   const ctx=canvas.getContext('2d');
   const rect=canvas.parentElement.getBoundingClientRect();
-  canvas.width=rect.width*2;canvas.height=280*2;ctx.scale(2,2);
-  const W=rect.width,H=280,pad={t:20,r:20,b:40,l:60};
+  const W=rect.width||600,H=280,pad={t:20,r:20,b:40,l:60};
+  canvas.width=W*2;canvas.height=H*2;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.scale(2,2);
   ctx.clearRect(0,0,W,H);
   const daysInMonth=new Date(currentYear,currentMonth+1,0).getDate();
   const daily=new Array(daysInMonth).fill(0);
-  cm.forEach(e=>{const d=new Date(e.date).getDate();daily[d-1]+=e.amt});
-  const maxV=Math.max(...daily,1)*1.1;
+  cm.forEach(e=>{const d=parseAppDate(e.date).getDate();if(d>=1&&d<=daysInMonth)daily[d-1]+=e.amt});
+  const maxV=Math.max(...daily,100)*1.1;
   const chartW=W-pad.l-pad.r,chartH=H-pad.t-pad.b;
   const barW=Math.min((chartW/daysInMonth)*0.7,20);
   const gap=(chartW-barW*daysInMonth)/(daysInMonth+1);
@@ -1493,9 +1712,9 @@ function renderCalendar(){
   for(let m=0;m<12;m++){
     const daysInMonth=new Date(year,m+1,0).getDate();
     const firstDay=(new Date(year,m,1).getDay()+6)%7; // Mon=0
-    const monthExpenses=expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===m&&d.getFullYear()===year});
+    const monthExpenses=expenses.filter(e=>{const d=parseAppDate(e.date);return d.getMonth()===m&&d.getFullYear()===year});
     const dailyMap={};
-    monthExpenses.forEach(e=>{const d=new Date(e.date).getDate();dailyMap[d]=(dailyMap[d]||0)+e.amt});
+    monthExpenses.forEach(e=>{const d=parseAppDate(e.date).getDate();dailyMap[d]=(dailyMap[d]||0)+e.amt});
     const totalMonth=monthExpenses.reduce((s,e)=>s+e.amt,0);
 
     html+=`<div class="month-card"><h4>${MONTH_SHORT[m]} ${year} <span style="float:right;font-size:11px;color:var(--text-muted)">${fmt(totalMonth)}</span></h4>`;
@@ -1552,6 +1771,29 @@ function renderSetup(){
     </div>`
   ).join('');
 
+  // Recurring Setup UI
+  const recList = document.getElementById('setupRecurringList');
+  if(recList) {
+    if(!config.recurringRules || config.recurringRules.length === 0) {
+      recList.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">No recurring rules yet.</div>';
+    } else {
+      recList.innerHTML = config.recurringRules.map(r => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px">
+          <div><div style="font-size:13px;font-weight:600">${r.name}</div><div style="font-size:11px;color:var(--text-muted)">${r.cat} • ${r.mode} • Due: ${r.day}th</div></div>
+          <div style="display:flex;align-items:center;gap:12px"><div style="font-weight:700">${fmt(r.amt)}</div><button class="btn btn-ghost btn-sm" onclick="deleteRecurringRule(${r.id})" style="padding:4px 8px;color:#ef4444">✕</button></div>
+        </div>
+      `).join('');
+    }
+  }
+  const recCat = document.getElementById('recCat');
+  if(recCat) {
+    recCat.innerHTML = '<option value="">Select Category...</option>' + CATEGORIES.map(c=>`<option>${c.name}</option>`).join('');
+  }
+  const recMode = document.getElementById('recMode');
+  if(recMode) {
+    recMode.innerHTML = '<option value="">Select Mode...</option>' + PAYMENT_MODES.map(m=>`<option>${m}</option>`).join('');
+  }
+
   // Projections
   let s=config.salary;
   document.getElementById('projectionBody').innerHTML=Array.from({length:5},(_, i)=>{
@@ -1565,6 +1807,14 @@ function renderSetup(){
       <td style="color:var(--accent-green)">${fmt(Math.round(sal*0.2))}</td>
     </tr>`;
   }).join('');
+  // Goals setup inputs
+  if(!config.goals) config.goals = {trip: 30000, pc: 70000, invest: 100000};
+  const gT = document.getElementById('goalTrip');
+  const gP = document.getElementById('goalPC');
+  const gI = document.getElementById('goalInvest');
+  if(gT) gT.value = config.goals.trip || 30000;
+  if(gP) gP.value = config.goals.pc || 70000;
+  if(gI) gI.value = config.goals.invest || 100000;
 }
 
 function updateSetup(){
@@ -1573,9 +1823,285 @@ function updateSetup(){
   saveData();renderAll();showToast('⚙️ Settings updated!');
 }
 
+function updateSavingsGoals(){
+  config.goals = {
+    trip: Number(document.getElementById('goalTrip').value) || 0,
+    pc: Number(document.getElementById('goalPC').value) || 0,
+    invest: Number(document.getElementById('goalInvest').value) || 0
+  };
+  saveData();
+  renderSavingsGoals();
+  showToast('✅ Goals updated');
+}
+
+function addRecurringRule(){
+  const name=document.getElementById('recName').value.trim();
+  const amt=Number(document.getElementById('recAmt').value);
+  const cat=document.getElementById('recCat').value;
+  const mode=document.getElementById('recMode').value;
+  const day=Number(document.getElementById('recDay').value);
+  if(!name||!amt||!cat||!mode||!day||day<1||day>31){
+    showToast('⚠️ Please fill all fields correctly');return;
+  }
+  if(!config.recurringRules) config.recurringRules=[];
+  config.recurringRules.push({id:Date.now(), name, amt, cat, mode, day});
+  document.getElementById('recName').value='';
+  document.getElementById('recAmt').value='';
+  document.getElementById('recDay').value='';
+  saveData();
+  renderSetup();
+  renderDashboard();
+  showToast('✅ Rule added');
+}
+
+function deleteRecurringRule(id){
+  if(!confirm('Delete this recurring rule?'))return;
+  config.recurringRules = config.recurringRules.filter(r=>r.id!==id);
+  saveData();
+  renderSetup();
+  renderDashboard();
+  showToast('🗑️ Rule deleted');
+}
+
+// ==================== SAVINGS GOALS PROGRESS ====================
+function renderSavingsGoals(){
+  const container = document.getElementById('savingsGoalsContainer');
+  if(!container)return;
+  if(!config.goals) config.goals = {trip: 30000, pc: 70000, invest: 100000};
+  
+  const tripSaved = expenses.filter(e=>e.cat==='Trip Savings').reduce((s,e)=>s+e.amt,0);
+  const pcSaved = expenses.filter(e=>e.cat==='PC & Sim Savings').reduce((s,e)=>s+e.amt,0);
+  const investSaved = expenses.filter(e=>e.cat==='Investments & Savings').reduce((s,e)=>s+e.amt,0);
+
+  const goals = [
+    { name: 'Trip Savings', current: tripSaved, target: config.goals.trip || 30000, color: '#34d399' },
+    { name: 'PC & Sim Savings', current: pcSaved, target: config.goals.pc || 70000, color: '#22d3ee' },
+    { name: 'Investments & Savings', current: investSaved, target: config.goals.invest || 100000, color: '#10b981' }
+  ];
+
+  container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:10px">` +
+    goals.map(g=>{
+      const pct = Math.min(Math.round((g.current/g.target)*100), 100);
+      return `<div style="padding:14px;background:rgba(15,23,42,.5);border:1px solid var(--border);border-radius:var(--radius)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:13px;font-weight:700;color:${g.color}">${g.name}</span>
+          <span style="font-size:12px;font-weight:700">${fmt(g.current)} / ${fmt(g.target)}</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${g.color}"></div></div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px;text-align:right">${pct}% Goal Achieved</div>
+      </div>`;
+    }).join('') + `</div>`;
+}
+
+// ==================== CREDIT CARD DUES (SBI & ICICI) ====================
+function renderCreditCardDues(){
+  const container = document.getElementById('cardDuesContainer');
+  if(!container)return;
+  const today = new Date();
+  const day = today.getDate();
+  const month = today.getMonth();
+  const year = today.getFullYear();
+
+  // SBI: Gen 7th, Due 27th
+  const sbiExps = expenses.filter(e => (e.mode==='Credit Card (SBI)' || e.mode==='Credit Card'));
+  let sbiBilled = 0, sbiUnbilled = 0, sbiDueDate = '', sbiDaysLeft = 0, sbiCycleKey = '';
+  if (day >= 7) {
+    sbiCycleKey = 'SBI-'+year+'-'+month;
+    const genDate = new Date(year, month, 7);
+    const dueDate = new Date(year, month, 27);
+    sbiExps.forEach(e => { const ed = new Date(e.date); if (ed <= genDate) sbiBilled += e.amt; else sbiUnbilled += e.amt; });
+    sbiDueDate = fmtDate(dueDate); sbiDaysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+  } else {
+    sbiCycleKey = 'SBI-'+year+'-'+(month-1);
+    const genDate = new Date(year, month - 1, 7);
+    const dueDate = new Date(year, month, 27);
+    sbiExps.forEach(e => { const ed = new Date(e.date); if (ed > genDate) sbiUnbilled += e.amt; else sbiBilled += e.amt; });
+    sbiDueDate = fmtDate(dueDate); sbiDaysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+  }
+  const sbiIsPaid = config.ccPaid && config.ccPaid[sbiCycleKey];
+
+  // ICICI: Gen 18th, Due 6th of next month
+  const iciciExps = expenses.filter(e => e.mode==='Credit Card (ICICI)');
+  let iciciBilled = 0, iciciUnbilled = 0, iciciDueDate = '', iciciDaysLeft = 0, iciciCycleKey = '';
+  iciciCycleKey = 'ICICI-'+(day >= 18 ? year+'-'+month : year+'-'+(month-1));
+  const iciciDue = day >= 18 ? new Date(year, month + 1, 6) : new Date(year, month, 6);
+  const iciciGen = day >= 18 ? new Date(year, month, 18) : new Date(year, month - 1, 18);
+  iciciExps.forEach(e => { const ed = new Date(e.date); if (ed <= iciciGen) iciciBilled += e.amt; else iciciUnbilled += e.amt; });
+  iciciDueDate = fmtDate(iciciDue); iciciDaysLeft = Math.ceil((iciciDue - today) / (1000 * 60 * 60 * 24));
+  const iciciIsPaid = config.ccPaid && config.ccPaid[iciciCycleKey];
+
+  container.innerHTML = `
+    <div class="due-card-grid">
+      <div class="card-due-item">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-weight:700;color:#ef4444">💳 SBI Credit Card</span>
+          <span class="due-badge ${sbiIsPaid?'safe':sbiDaysLeft<=5?'urgent':sbiDaysLeft<=10?'normal':'safe'}">${sbiIsPaid?'Paid ✓':`Due in ${sbiDaysLeft}d`}</span>
+        </div>
+        <div style="font-size:20px;font-weight:800;margin-bottom:4px">${fmt((sbiBilled>0&&!sbiIsPaid) ? sbiBilled : sbiUnbilled)}</div>
+        <div style="font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:end">
+          <div>
+            Bill Gen: 7th • Due: ${sbiDueDate}<br>
+            Unbilled: ${fmt(sbiUnbilled)} ${(sbiBilled>0&&sbiIsPaid)?`• Billed: ${fmt(sbiBilled)}`:''}
+          </div>
+          ${(sbiBilled>0 && !sbiIsPaid) ? `<button class="btn btn-primary btn-sm" onclick="markCCPaid('${sbiCycleKey}')" style="padding:4px 8px">Paid ✓</button>` : ''}
+        </div>
+      </div>
+      <div class="card-due-item">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-weight:700;color:#f97316">💳 ICICI Credit Card</span>
+          <span class="due-badge ${iciciIsPaid?'safe':iciciDaysLeft<=5?'urgent':iciciDaysLeft<=10?'normal':'safe'}">${iciciIsPaid?'Paid ✓':`Due in ${iciciDaysLeft}d`}</span>
+        </div>
+        <div style="font-size:20px;font-weight:800;margin-bottom:4px">${fmt((iciciBilled>0&&!iciciIsPaid) ? iciciBilled : iciciUnbilled)}</div>
+        <div style="font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:end">
+          <div>
+            Bill Gen: 18th • Due: ${iciciDueDate}<br>
+            Unbilled: ${fmt(iciciUnbilled)} ${(iciciBilled>0&&iciciIsPaid)?`• Billed: ${fmt(iciciBilled)}`:''}
+          </div>
+          ${(iciciBilled>0 && !iciciIsPaid) ? `<button class="btn btn-primary btn-sm" onclick="markCCPaid('${iciciCycleKey}')" style="padding:4px 8px">Paid ✓</button>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function markCCPaid(cycleKey){
+  if(!confirm('Mark this credit card bill as paid?'))return;
+  if(!config.ccPaid) config.ccPaid = {};
+  config.ccPaid[cycleKey] = true;
+  saveData();
+  renderDashboard();
+  showToast('✅ Credit Card Bill Marked Paid');
+}
+
+// ==================== FRIENDS & SETTLEMENTS ====================
+function renderFriendsSettlements(){
+  const container = document.getElementById('friendsContainer');
+  if(!container)return;
+  const unsettled = expenses.map((e,idx)=>({...e, originalIndex:idx})).filter(e => e.isReimbursable && !e.isSettled);
+
+  const totalOwed = unsettled.reduce((s,e)=>s+e.amt, 0);
+
+  if(unsettled.length===0){
+    container.innerHTML = `<div class="empty-state" style="padding:20px 0"><p>🎉 All settled up! No money owed by friends.</p></div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div style="font-size:12px;color:var(--accent-orange);font-weight:700;margin-bottom:10px">
+      Total Pending: ${fmt(totalOwed)} (${unsettled.length} items)
+    </div>
+    <div style="max-height:220px;overflow-y:auto">
+      ` + unsettled.map(e => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(30,58,95,.2)">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-primary)">👤 ${e.friendName || 'Friend'} — ${e.desc}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${fmtDate(e.date)} • ${e.mode}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:14px;font-weight:700;color:var(--accent-orange)">${fmt(e.amt)}</span>
+            <button class="btn btn-sm btn-ghost" style="color:var(--accent-green);border-color:rgba(16,185,129,.3)" onclick="markFriendSettled(${e.originalIndex})">✓ Settled</button>
+          </div>
+        </div>
+      `).join('') + `
+    </div>
+  `;
+}
+
+function markFriendSettled(idx){
+  if(confirm(`Mark "${expenses[idx].friendName || 'Friend'}'s ${fmt(expenses[idx].amt)}" as settled/received?`)){
+    expenses[idx].isSettled = true;
+    saveData();
+    renderAll();
+    showToast('✅ Marked as Settled!');
+  }
+}
+
+// ==================== RECURRING EMIS & SUBSCRIPTIONS ====================
+function renderRecurringManager(){
+  const container = document.getElementById('recurringManagerContainer');
+  if(!container)return;
+  if(!config.recurringRules) config.recurringRules = [
+    { id: 1, name: 'House Rent', amt: 12000, day: 1, cat: 'Rent & Maintenance', mode: 'Bank Transfer' },
+    { id: 2, name: 'Home EMI', amt: 15000, day: 10, cat: 'EMIs & Subscriptions', mode: 'Bank Transfer' },
+    { id: 3, name: 'Netflix', amt: 199, day: 5, cat: 'EMIs & Subscriptions', mode: 'Credit Card (SBI)' },
+    { id: 4, name: 'Spotify', amt: 119, day: 5, cat: 'EMIs & Subscriptions', mode: 'Credit Card (ICICI)' },
+    { id: 5, name: 'Monthly SIP', amt: 5000, day: 5, cat: 'Investments & Savings', mode: 'Bank Transfer' }
+  ];
+
+  const now = new Date();
+  const cDay = now.getDate();
+  const cMonth = now.getMonth();
+  const cYear = now.getFullYear();
+
+  const cmExps = expenses.filter(e => {
+    const d = new Date(e.date);
+    return d.getMonth() === cMonth && d.getFullYear() === cYear;
+  });
+
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:10px">
+      ` + config.recurringRules.map(r => {
+        const isLogged = cmExps.some(e => (e.desc||'').toLowerCase().includes(r.name.toLowerCase()));
+        const diff = r.day - cDay;
+        const dueText = isLogged ? 'Logged ✓' : (diff === 0 ? 'Due Today!' : (diff > 0 ? `Due in ${diff}d (${r.day}th)` : `Was due on ${r.day}th`));
+        const badgeClass = isLogged ? 'safe' : (diff <= 3 ? 'urgent' : 'normal');
+
+        return `
+          <div style="padding:14px;background:rgba(15,23,42,.5);border:1px solid var(--border);border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:13px;font-weight:700">${r.name}</div>
+              <div style="font-size:11px;color:var(--text-muted)">${r.cat} • ${r.mode}</div>
+              <div style="font-size:14px;font-weight:800;color:var(--text-primary);margin-top:4px">${fmt(r.amt)}</div>
+            </div>
+            <div style="text-align:right">
+              <span class="due-badge ${badgeClass}" style="margin-bottom:8px">${dueText}</span><br>
+              ${isLogged ?
+                `<button class="btn btn-ghost btn-sm" disabled style="opacity:.6">Logged</button>` :
+                `<button class="btn btn-primary btn-sm" onclick="logRecurringExpense(${r.id})">➕ Log</button>`
+              }
+            </div>
+          </div>
+        `;
+      }).join('') + `
+    </div>
+  `;
+}
+
+function logRecurringExpense(id){
+  const r = config.recurringRules.find(x => x.id === id);
+  if(!r)return;
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(Math.min(r.day, 28)).padStart(2,'0')}`;
+  const type = getType(r.cat);
+  expenses.push({
+    date: dateStr,
+    desc: r.name,
+    cat: r.cat,
+    amt: r.amt,
+    mode: r.mode,
+    type: type,
+    notes: 'Recurring payment'
+  });
+  expenses.sort((a,b)=>a.date.localeCompare(b.date));
+  saveData();
+  renderAll();
+  showToast(`✅ Logged ${r.name} (${fmt(r.amt)})!`);
+}
+
+function quickScrollToAdd(){
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('nav-tracker').classList.add('active');
+  document.getElementById('sec-tracker').classList.add('active');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+  setTimeout(()=>document.getElementById('expDesc').focus(), 300);
+}
+
+// ==================== RESIZE HANDLER ====================
+
 // ==================== SPENDING FORECAST ====================
 function renderForecast(){
-  const cm=expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===currentMonth&&d.getFullYear()===currentYear});
+  const cm=expenses.filter(e=>{const d=parseAppDate(e.date);return d.getMonth()===currentMonth&&d.getFullYear()===currentYear});
   const totalSpend=cm.filter(e=>getType(e.cat)!=='Saving').reduce((s,e)=>s+e.amt,0);
   if(cm.length===0){document.getElementById('forecastBanner').innerHTML='';return}
   const dates=[...new Set(cm.map(e=>e.date))].sort();
@@ -1593,7 +2119,7 @@ function renderForecast(){
 
 // ==================== SMART INSIGHTS ====================
 function renderInsights(){
-  const cm=expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===currentMonth&&d.getFullYear()===currentYear});
+  const cm=expenses.filter(e=>{const d=parseAppDate(e.date);return d.getMonth()===currentMonth&&d.getFullYear()===currentYear});
   const totalSpend=cm.filter(e=>getType(e.cat)!=='Saving').reduce((s,e)=>s+e.amt,0);
   const salary=config.salary;
   const insights=[];
@@ -1611,12 +2137,12 @@ function renderInsights(){
   const wantBudget=salary*0.3;
   if(wantAmt>wantBudget)insights.push({icon:'🛍️',bg:'rgba(236,72,153,.12)',title:'Wants Over Budget by '+fmt(wantAmt-wantBudget),desc:`${fmt(wantAmt)} on wants vs ${fmt(wantBudget)} budget. Food delivery & shopping are likely culprits.`});
   // 4. Food delivery spend
-  const foodKeywords=['swiggy','zomato','dinner out','brunch','lunch'];
-  const foodSpend=cm.filter(e=>foodKeywords.some(k=>e.desc.toLowerCase().includes(k))).reduce((s,e)=>s+e.amt,0);
-  if(foodSpend>2000)insights.push({icon:'🍕',bg:'rgba(245,158,11,.12)',title:'Food Delivery: '+fmt(foodSpend),desc:`That's ${fmt(Math.round(foodSpend/30))}/day on ordering food. Cooking 3 more meals/week could save ~${fmt(Math.round(foodSpend*0.4))}/month.`});
+  const foodKeywords=['swiggy','zomato','blinkit','instamart','zepto','restaurant','dinner','lunch','food'];
+  const foodSpend=cm.filter(e=>foodKeywords.some(k=>(e.desc||'').toLowerCase().includes(k))).reduce((s,e)=>s+e.amt,0);
+  if(foodSpend>salary*0.15)insights.push({icon:'🍔',title:'High Food Delivery/Dining',desc:`You've spent ${fmt(foodSpend)} on food/dining. Consider cooking more to save.`});
   // 5. Transport
   const transKeywords=['uber','auto','metro','petrol','cab'];
-  const transSpend=cm.filter(e=>transKeywords.some(k=>e.desc.toLowerCase().includes(k))).reduce((s,e)=>s+e.amt,0);
+  const transSpend=cm.filter(e=>transKeywords.some(k=>(e.desc||'').toLowerCase().includes(k))).reduce((s,e)=>s+e.amt,0);
   if(transSpend>1500)insights.push({icon:'🚗',bg:'rgba(6,182,212,.12)',title:'Transport: '+fmt(transSpend),desc:`Consider carpooling or metro to reduce this. Late-night Ubers add up fast.`});
   // 6. Credit card usage
   const ccSpend=cm.filter(e=>e.mode==='Credit Card').reduce((s,e)=>s+e.amt,0);
@@ -1634,13 +2160,21 @@ function renderInsights(){
 // ==================== RECURRING EXPENSES ====================
 function renderRecurring(){
   const descCount={};
-  expenses.forEach(e=>{const k=e.desc.toLowerCase();if(!descCount[k])descCount[k]={desc:e.desc,cat:e.cat,amt:[],months:new Set()};descCount[k].amt.push(e.amt);descCount[k].months.add(new Date(e.date).getMonth())});
+  expenses.forEach(e=>{
+    const k=(e.desc||'').toLowerCase();
+    if(!k) return;
+    if(!descCount[k])descCount[k]={desc:e.desc,cat:e.cat,amt:[],months:new Set()};
+    descCount[k].amt.push(e.amt||0);
+    descCount[k].months.add(parseAppDate(e.date).getMonth());
+  });
   const recurring=Object.values(descCount).filter(d=>d.months.size>=2).sort((a,b)=>b.amt.reduce((s,v)=>s+v,0)-a.amt.reduce((s,v)=>s+v,0)).slice(0,8);
-  if(recurring.length===0){document.getElementById('recurringList').innerHTML='<p style="font-size:13px;color:var(--text-muted)">No recurring expenses detected yet. Keep logging!</p>';return}
-  document.getElementById('recurringList').innerHTML=recurring.map(r=>{
+  const listEl=document.getElementById('recurringList');
+  if(!listEl)return;
+  if(recurring.length===0){listEl.innerHTML='<p style="font-size:13px;color:var(--text-muted)">No recurring expenses detected yet. Keep logging!</p>';return}
+  listEl.innerHTML=recurring.map(r=>{
     const avg=Math.round(r.amt.reduce((s,v)=>s+v,0)/r.amt.length);
     const total=r.amt.reduce((s,v)=>s+v,0);
-    return `<div class="recurring-item"><div><span style="font-weight:600">${r.desc}</span><span style="color:var(--text-muted);margin-left:8px;font-size:11px">${r.cat}</span></div><div style="display:flex;align-items:center;gap:10px"><span style="font-weight:700">${fmt(avg)}/avg</span><span class="recurring-freq">${r.months.size} months</span><span style="color:var(--text-muted);font-size:11px">Total: ${fmt(total)}</span></div></div>`;
+    return `<div class="recurring-item"><div><span style="font-weight:600">${r.desc}</span><span style="color:var(--text-muted);margin-left:8px;font-size:11px">${r.cat||''}</span></div><div style="display:flex;align-items:center;gap:10px"><span style="font-weight:700">${fmt(avg)}/avg</span><span class="recurring-freq">${r.months.size} months</span><span style="color:var(--text-muted);font-size:11px">Total: ${fmt(total)}</span></div></div>`;
   }).join('');
 }
 
@@ -1648,8 +2182,8 @@ function renderRecurring(){
 function renderMoMComparison(){
   const prevM=currentMonth===0?11:currentMonth-1;
   const prevY=currentMonth===0?currentYear-1:currentYear;
-  const cm=expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===currentMonth&&d.getFullYear()===currentYear});
-  const pm=expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===prevM&&d.getFullYear()===prevY});
+  const cm=expenses.filter(e=>{const d=parseAppDate(e.date);return d.getMonth()===currentMonth&&d.getFullYear()===currentYear});
+  const pm=expenses.filter(e=>{const d=parseAppDate(e.date);return d.getMonth()===prevM&&d.getFullYear()===prevY});
   const curTotal=cm.reduce((s,e)=>s+e.amt,0);
   const prevTotal=pm.reduce((s,e)=>s+e.amt,0);
   if(prevTotal===0&&curTotal===0){document.getElementById('momComparison').innerHTML='';return}
@@ -1678,11 +2212,18 @@ function renderMoMComparison(){
 }
 
 // ==================== CLOUD SYNC (FIREBASE) ====================
-let syncUrl = localStorage.getItem('ft_sync_url') || 'https://finance-tracker-8e6c9-default-rtdb.firebaseio.com';
+let syncUrl = (localStorage.getItem('ft_sync_url') || 'https://finance-tracker-8e6c9-default-rtdb.firebaseio.com').trim().replace(/\/+$/,'');
 let syncTimer = null;
 
+function getFirebaseUrl(){
+  if(!syncUrl) return '';
+  let clean = syncUrl.trim().replace(/\/+$/,'');
+  if(clean.endsWith('/financeTracker.json')) return clean;
+  return clean + '/financeTracker.json';
+}
+
 function saveSyncUrl(){
-  syncUrl = document.getElementById('syncUrl').value.trim().replace(/\/$/,'');
+  syncUrl = document.getElementById('syncUrl').value.trim().replace(/\/+$/,'');
   localStorage.setItem('ft_sync_url', syncUrl);
   updateSyncStatus();
   if(syncUrl){showToast('🔥 Firebase connected! Auto-sync is on.');autoSync()}
@@ -1720,7 +2261,7 @@ async function silentPush(){
   updateSyncStatus(true);
   try{
     const payload=JSON.stringify({config, expenses, pushed:new Date().toISOString()});
-    await fetch(syncUrl+'/financeTracker.json',{method:'PUT',body:payload});
+    await fetch(getFirebaseUrl(),{method:'PUT',body:payload});
   }catch(err){console.warn('Auto-sync push failed:',err)}
   finally{updateSyncStatus(false)}
 }
@@ -1729,7 +2270,7 @@ async function silentPull(){
   if(!syncUrl)return;
   updateSyncStatus(true);
   try{
-    const resp=await fetch(syncUrl+'/financeTracker.json');
+    const resp=await fetch(getFirebaseUrl());
     if(!resp.ok)return;
     const data=await resp.json();
     if(data && data.expenses && data.expenses.length>0){
@@ -1737,6 +2278,14 @@ async function silentPull(){
       if(data.config)config=data.config;
       const validCats=CATEGORIES.map(c=>c.name);
       expenses.forEach(e=>{if(!validCats.includes(e.cat))e.cat=migrateCategory(e.desc,e.cat)});
+      if(expenses.length > 0){
+        const latest = expenses[expenses.length - 1];
+        if(latest && latest.date){
+          const ld = parseAppDate(latest.date);
+          currentMonth = ld.getMonth();
+          currentYear = ld.getFullYear();
+        }
+      }
       localStorage.setItem('ft_expenses',JSON.stringify(expenses));
       localStorage.setItem('ft_config',JSON.stringify(config));
       renderAll();
@@ -1752,7 +2301,7 @@ async function cloudPush(){
   btns.forEach(b=>setLoading(b,true));
   try{
     const payload=JSON.stringify({config, expenses, pushed:new Date().toISOString()});
-    const resp=await fetch(syncUrl+'/financeTracker.json',{method:'PUT',body:payload});
+    const resp=await fetch(getFirebaseUrl(),{method:'PUT',body:payload});
     if(resp.ok)showToast('✅ Data pushed to Firebase!');
     else showToast('❌ Push failed: '+resp.status);
   }catch(err){showToast('❌ Push error: '+err.message)}
@@ -1764,7 +2313,7 @@ async function cloudPull(){
   const btns=document.querySelectorAll('.sync-btn.pull');
   btns.forEach(b=>setLoading(b,true));
   try{
-    const resp=await fetch(syncUrl+'/financeTracker.json');
+    const resp=await fetch(getFirebaseUrl());
     if(!resp.ok){showToast('❌ Pull failed: '+resp.status);return}
     const data=await resp.json();
     if(data && data.expenses){
@@ -1794,5 +2343,6 @@ if(syncUrl) setTimeout(()=>{
 
 init();
 </script>
+<button class="floating-add-btn" onclick="quickScrollToAdd()" title="Quick Add Expense">➕</button>
 </body>
 </html>
