@@ -528,9 +528,6 @@ tbody tr:hover{background:rgba(59,130,246,.05)}
           <div class="form-group"><label>Year</label><input type="number" id="setupYear" value="2026" onchange="updateSetup()"></div>
         </div>
         <div style="margin-top:16px" id="budgetSplit"></div>
-        <div style="margin-top:16px">
-          <div class="form-group"><label>Weekly Spending Limit</label><input type="number" id="setupWeeklyLimit" value="10000" onchange="updateSetup()"></div>
-        </div>
       </div>
       <div class="card">
         <div class="card-title"><div class="icon" style="background:rgba(139,92,246,.15)">📂</div> Categories & Payment Modes</div>
@@ -633,7 +630,7 @@ const CATEGORIES = [
   {name:'Gifts', type:'Want', color:'#e879f9'},
   {name:'Investments & Savings', type:'Saving', color:'#10b981'},
   {name:'Trip Savings', type:'Saving', color:'#34d399'},
-  {name:'Travel & Hotels', type:'Saving', color:'#2dd4bf'},
+  {name:'Travel & Hotels', type:'Want', color:'#2dd4bf'},
   {name:'PC & Sim Savings', type:'Saving', color:'#22d3ee'},
   {name:'Miscellaneous', type:'Want', color:'#a78bfa'}
 ];
@@ -643,7 +640,7 @@ const MONTH_NAMES = ['January','February','March','April','May','June','July','A
 const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 let config = JSON.parse(localStorage.getItem('ft_config') || '{}');
-if(!config.salary) config = {salary:50000, year:2026, weeklyLimit:10000};
+if(!config.salary) config = {salary:50000, year:2026};
 let expenses = JSON.parse(localStorage.getItem('ft_expenses') || '[]');
 let editingIdx = -1;
 let currentMonth = new Date().getMonth();
@@ -966,7 +963,6 @@ function init(){
 
   document.getElementById('setupSalary').value = config.salary;
   document.getElementById('setupYear').value = config.year;
-  document.getElementById('setupWeeklyLimit').value = config.weeklyLimit;
   const today = new Date();
   document.getElementById('expDate').value = today.toISOString().split('T')[0];
   updateDateTime();
@@ -1085,18 +1081,18 @@ function renderDashboard(){
   // Current month filter
   const now = new Date();
   const cm = expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===currentMonth&&d.getFullYear()===currentYear});
-  const totalSpend=cm.reduce((s,e)=>s+e.amt,0);
-  const needSpend=cm.filter(e=>e.type==='Need').reduce((s,e)=>s+e.amt,0);
-  const wantSpend=cm.filter(e=>e.type==='Want').reduce((s,e)=>s+e.amt,0);
-  const saveSpend=cm.filter(e=>e.type==='Saving').reduce((s,e)=>s+e.amt,0);
-  const left=salary-totalSpend;
+  const totalSpend=cm.filter(e=>getType(e.cat)!=='Saving').reduce((s,e)=>s+e.amt,0);
+  const needSpend=cm.filter(e=>getType(e.cat)==='Need').reduce((s,e)=>s+e.amt,0);
+  const wantSpend=cm.filter(e=>getType(e.cat)==='Want').reduce((s,e)=>s+e.amt,0);
+  const saveSpend=cm.filter(e=>getType(e.cat)==='Saving').reduce((s,e)=>s+e.amt,0);
+  const left=salary-totalSpend-saveSpend;
   const pctLeft=salary?((left/salary)*100).toFixed(1):0;
 
   document.getElementById('dashStats').innerHTML=`
     <div class="stat-card blue animate-in"><div class="stat-label">Total Salary</div><div class="stat-value">${fmt(salary)}</div><div class="stat-sub">${MONTH_NAMES[currentMonth]} ${currentYear}</div></div>
-    <div class="stat-card green animate-in" style="animation-delay:.1s"><div class="stat-label">Total Spent</div><div class="stat-value">${fmt(totalSpend)}</div><div class="stat-sub">${cm.length} transactions</div></div>
-    <div class="stat-card purple animate-in" style="animation-delay:.2s"><div class="stat-label">Amount Left</div><div class="stat-value" style="color:${left>=0?'var(--accent-green)':'var(--accent-red)'}">${fmt(left)}</div><div class="stat-sub">${pctLeft}% remaining</div></div>
-    <div class="stat-card orange animate-in" style="animation-delay:.3s"><div class="stat-label">Weekly Limit</div><div class="stat-value">${fmt(config.weeklyLimit)}</div><div class="stat-sub">per week budget</div></div>
+    <div class="stat-card green animate-in" style="animation-delay:.1s"><div class="stat-label">Expenses</div><div class="stat-value">${fmt(totalSpend)}</div><div class="stat-sub">${cm.filter(e=>getType(e.cat)!=='Saving').length} transactions</div></div>
+    <div class="stat-card cyan animate-in" style="animation-delay:.2s"><div class="stat-label">Savings / Investments</div><div class="stat-value" style="color:var(--accent-cyan)">${fmt(saveSpend)}</div><div class="stat-sub">${cm.filter(e=>getType(e.cat)==='Saving').length} transactions</div></div>
+    <div class="stat-card purple animate-in" style="animation-delay:.3s"><div class="stat-label">Amount Left</div><div class="stat-value" style="color:${left>=0?'var(--accent-green)':'var(--accent-red)'}">${fmt(left)}</div><div class="stat-sub">${pctLeft}% remaining</div></div>
   `;
 
   // Budget bars
@@ -1129,8 +1125,8 @@ function renderDashboard(){
   // Trend chart
   drawTrendChart(cm);
 
-  // Top 5
-  const sorted=[...cm].sort((a,b)=>b.amt-a.amt).slice(0,5);
+  // Top 5 (exclude savings/investments)
+  const sorted=[...cm].filter(e=>getType(e.cat)!=='Saving').sort((a,b)=>b.amt-a.amt).slice(0,5);
   document.getElementById('topExpenses').innerHTML=sorted.map((e,i)=>`
     <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(30,58,95,.2)">
       <div style="width:28px;height:28px;border-radius:8px;background:${getCatColor(e.cat)}22;color:${getCatColor(e.cat)};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800">${i+1}</div>
@@ -1278,7 +1274,7 @@ function renderWeekly(){
   const q=document.getElementById('weeklyQuarter').value;
   // Build weeks from expense data
   const weekMap={};
-  expenses.forEach(e=>{
+  expenses.filter(e=>getType(e.cat)!=='Saving').forEach(e=>{
     const d=new Date(e.date);
     const day=d.getDay();
     const mon=new Date(d);mon.setDate(d.getDate()-((day+6)%7)); // Monday
@@ -1290,21 +1286,23 @@ function renderWeekly(){
   weeks.forEach(w=>{
     const s=new Date(w.start);const e=new Date(s);e.setDate(s.getDate()+6);
     w.end=e.toISOString().split('T')[0];
-    w.ratio=Math.round((w.spend/config.weeklyLimit)*100);
+    const avgSpend=weeks.reduce((s,w)=>s+w.spend,0)/weeks.length||1;
+    w.ratio=Math.round((w.spend/avgSpend)*100);
     const m=s.getMonth();
     w.quarter=m<3?'Q1':m<6?'Q2':m<9?'Q3':'Q4';
   });
   if(q!=='all')weeks=weeks.filter(w=>w.quarter===q);
 
+  const avgSpend=weeks.reduce((s,w)=>s+w.spend,0)/weeks.length||1;
   document.getElementById('weeklyBody').innerHTML=weeks.map((w,i)=>{
-    const ok=w.spend<=config.weeklyLimit;
+    const ok=w.spend<=avgSpend;
     const pct=Math.min(w.ratio,100);
     return `<tr>
       <td style="font-weight:600;color:var(--text-muted)">${i+1}</td>
       <td>${fmtDate(w.start)}</td>
       <td>${fmtDate(w.end)}</td>
       <td style="font-weight:700">${fmt(w.spend)}</td>
-      <td>${fmt(config.weeklyLimit)}</td>
+      <td>${fmt(Math.round(avgSpend))}</td>
       <td style="font-weight:700;color:${ok?'var(--accent-green)':'var(--accent-red)'}">${w.ratio}%</td>
       <td><div class="week-status"><div class="week-dot" style="background:${ok?'var(--accent-green)':'var(--accent-red)'}"></div>${ok?'Under':'Over'}</div></td>
       <td style="width:120px"><div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${ok?'var(--accent-green)':'var(--accent-red)'}"></div></div></td>
@@ -1323,7 +1321,8 @@ function drawWeeklyChart(weeks){
   const W=rect.width,H=280,pad={t:20,r:20,b:50,l:60};
   ctx.clearRect(0,0,W,H);
   if(weeks.length===0)return;
-  const maxV=Math.max(...weeks.map(w=>w.spend),config.weeklyLimit)*1.1;
+  const avgSpend=weeks.reduce((s,w)=>s+w.spend,0)/weeks.length||0;
+  const maxV=Math.max(...weeks.map(w=>w.spend),avgSpend)*1.1;
   const chartW=W-pad.l-pad.r,chartH=H-pad.t-pad.b;
   const barW=Math.min((chartW/weeks.length)*0.6,40);
   const gap=(chartW-barW*weeks.length)/(weeks.length+1);
@@ -1337,20 +1336,22 @@ function drawWeeklyChart(weeks){
     ctx.fillText(fmt(Math.round(maxV*i/4)),pad.l-8,y+4);
   }
 
-  // Limit line
-  const limitY=pad.t+chartH*(1-config.weeklyLimit/maxV);
-  ctx.setLineDash([6,4]);ctx.strokeStyle='#f59e0b';ctx.lineWidth=1.5;
-  ctx.beginPath();ctx.moveTo(pad.l,limitY);ctx.lineTo(W-pad.r,limitY);ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle='#f59e0b';ctx.font='10px Inter';ctx.textAlign='left';
-  ctx.fillText('Limit: '+fmt(config.weeklyLimit),pad.l+4,limitY-6);
+  // Average line
+  if(avgSpend>0){
+    const avgY=pad.t+chartH*(1-avgSpend/maxV);
+    ctx.setLineDash([6,4]);ctx.strokeStyle='#06b6d4';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(pad.l,avgY);ctx.lineTo(W-pad.r,avgY);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#06b6d4';ctx.font='10px Inter';ctx.textAlign='left';
+    ctx.fillText('Avg: '+fmt(Math.round(avgSpend)),pad.l+4,avgY-6);
+  }
 
   // Bars
   weeks.forEach((w,i)=>{
     const x=pad.l+gap+(barW+gap)*i;
     const h=(w.spend/maxV)*chartH;
     const y=pad.t+chartH-h;
-    const ok=w.spend<=config.weeklyLimit;
+    const ok=w.spend<=avgSpend;
     const grad=ctx.createLinearGradient(x,y,x,pad.t+chartH);
     grad.addColorStop(0,ok?'rgba(16,185,129,.8)':'rgba(239,68,68,.8)');
     grad.addColorStop(1,ok?'rgba(16,185,129,.2)':'rgba(239,68,68,.2)');
@@ -1373,10 +1374,10 @@ function roundRect(ctx,x,y,w,h,r){
 function renderMonthly(){
   document.getElementById('monthLabel').textContent=MONTH_NAMES[currentMonth]+' '+currentYear;
   const cm=expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===currentMonth&&d.getFullYear()===currentYear});
-  const totalSpend=cm.reduce((s,e)=>s+e.amt,0);
-  const needSpend=cm.filter(e=>e.type==='Need').reduce((s,e)=>s+e.amt,0);
-  const wantSpend=cm.filter(e=>e.type==='Want').reduce((s,e)=>s+e.amt,0);
-  const saveSpend=cm.filter(e=>e.type==='Saving').reduce((s,e)=>s+e.amt,0);
+  const totalSpend=cm.filter(e=>getType(e.cat)!=='Saving').reduce((s,e)=>s+e.amt,0);
+  const needSpend=cm.filter(e=>getType(e.cat)==='Need').reduce((s,e)=>s+e.amt,0);
+  const wantSpend=cm.filter(e=>getType(e.cat)==='Want').reduce((s,e)=>s+e.amt,0);
+  const saveSpend=cm.filter(e=>getType(e.cat)==='Saving').reduce((s,e)=>s+e.amt,0);
   const avgDaily=cm.length?totalSpend/new Date(currentYear,currentMonth+1,0).getDate():0;
 
   document.getElementById('monthlyStats').innerHTML=`
@@ -1565,14 +1566,13 @@ function renderSetup(){
 function updateSetup(){
   config.salary=parseInt(document.getElementById('setupSalary').value)||50000;
   config.year=parseInt(document.getElementById('setupYear').value)||2026;
-  config.weeklyLimit=parseInt(document.getElementById('setupWeeklyLimit').value)||10000;
   saveData();renderAll();showToast('⚙️ Settings updated!');
 }
 
 // ==================== SPENDING FORECAST ====================
 function renderForecast(){
   const cm=expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===currentMonth&&d.getFullYear()===currentYear});
-  const totalSpend=cm.reduce((s,e)=>s+e.amt,0);
+  const totalSpend=cm.filter(e=>getType(e.cat)!=='Saving').reduce((s,e)=>s+e.amt,0);
   if(cm.length===0){document.getElementById('forecastBanner').innerHTML='';return}
   const dates=[...new Set(cm.map(e=>e.date))].sort();
   const daysCovered=dates.length;
@@ -1590,7 +1590,7 @@ function renderForecast(){
 // ==================== SMART INSIGHTS ====================
 function renderInsights(){
   const cm=expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===currentMonth&&d.getFullYear()===currentYear});
-  const totalSpend=cm.reduce((s,e)=>s+e.amt,0);
+  const totalSpend=cm.filter(e=>getType(e.cat)!=='Saving').reduce((s,e)=>s+e.amt,0);
   const salary=config.salary;
   const insights=[];
   // 1. Biggest category
